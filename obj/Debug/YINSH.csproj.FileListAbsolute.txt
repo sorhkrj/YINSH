@@ -1,0 +1,8 @@
+C:\Users\clsrn\source\repos\YINSH\YINSH\bin\Debug\YINSH.exe.config
+C:\Users\clsrn\source\repos\YINSH\YINSH\bin\Debug\YINSH.exe
+C:\Users\clsrn\source\repos\YINSH\YINSH\bin\Debug\YINSH.pdb
+C:\Users\clsrn\source\repos\YINSH\YINSH\obj\Debug\YINSH.csprojAssemblyReference.cache
+C:\Users\clsrn\source\repos\YINSH\YINSH\obj\Debug\YINSH.exe
+C:\Users\clsrn\source\repos\YINSH\YINSH\obj\Debug\YINSH.pdb
+C:\Users\clsrn\source\repos\YINSH\YINSH\obj\Debug\YINSH.csproj.GenerateResource.cache
+C:\Users\clsrn\source\repos\YINSH\YINSH\obj\Debug\YINSH.GAME.resources
