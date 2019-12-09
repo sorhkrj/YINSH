@@ -6,9 +6,11 @@ namespace YINSH
 {
     public partial class GAME : Form
     {
+        //보드
         Panel panel;
+        Bitmap Board;
 
-        //맵
+        //맵 크기
         double width;
         double height;
 
@@ -41,28 +43,47 @@ namespace YINSH
             int length = (Map_Size * 2) + 1;
             Game_Point = new PointF[length, length];
             Node_Bool = new bool[length, length];
+
+            //Map 그리기 및 좌표 정의
+            Map();
         }
 
         private void panel1_Paint(object sender, PaintEventArgs e)
         {
-            Map();
+            Board_Image();
         }
 
         private void panel1_MouseMove(object sender, MouseEventArgs e)
         {
-            Node_Drawing(panel, new Point(e.X, e.Y));
+            Node_Drawing(new Point(e.X, e.Y));
         }
 
+        /// <summary>
+        /// Board를 panel에 보여준다
+        /// </summary>
+        /// 
+        void Board_Image()
+        {
+            Graphics g = panel.CreateGraphics();
+            g.DrawImage(Board, new Point(0, 0));
+            g.Dispose();
+        }
+
+        /// <summary>
+        /// Board에 Map을 그리고 저장한다
+        /// Map 좌표를 정의한다
+        /// </summary>
+        /// 
         private void Map()
         {
-            Map_Drawing(panel);
+            Map_Drawing();
             LinePos(width, height);
         }
 
         #region 그리는 함수들 정의
-        private void Node_Drawing(Panel Node, Point Cursor_Point)
+        private void Node_Drawing(Point Cursor_Point)
         {
-            Graphics g = Node.CreateGraphics();//그래픽 담당
+            Graphics g = panel.CreateGraphics();//그래픽 담당
             Pen pen = new Pen(Color.Black, 1);//그리는 펜, 색깔, 두께
 
             int Size = LineSize / Map_Size;//한칸 길이
@@ -87,9 +108,13 @@ namespace YINSH
             pen.Dispose();
         }
 
-        void Map_Drawing(Panel Map)
+        /// <summary>
+        /// Board에 맵 그림을 그린다
+        /// </summary>
+        void Map_Drawing()
         {
-            Graphics g = Map.CreateGraphics();//그래픽 담당
+            Board = new Bitmap(panel.Width, panel.Height);
+            Graphics g = Graphics.FromImage(Board);//그래픽 담당
             Pen pen = new Pen(Color.Black, 1);//그리는 펜, 색깔, 두께
 
             int Size = LineSize / Map_Size;//한칸 길이
@@ -114,6 +139,9 @@ namespace YINSH
              * Draw_Point는 맵을 그리는 좌표
              */
 
+            /*
+             * 꼭짓점
+             */
             for (int j = 0; j < Map_Size; j++)//맵의 사이즈만큼 등분한다
             {
                 for (int i = 0; i < Map_Hex; i++)//정육각형이므로 6방향
@@ -135,7 +163,6 @@ namespace YINSH
 
             /*
              * 선분
-             * 기록된 좌표를 사용하여 긋는다
              */
             y = 0 - (Size);//마지막 꼭짓점 안그려지는 만큼 일부러 잘랐다
             angle = (180 - (180 - (360 / Map_Hex)) / 2) + (360 / Map_Hex);//선분 길이 늘리기

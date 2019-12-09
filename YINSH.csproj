@@ -35,8 +35,18 @@
   <PropertyGroup>
     <StartupObject>YINSH.Program</StartupObject>
   </PropertyGroup>
+  <PropertyGroup>
+    <TargetZone>LocalIntranet</TargetZone>
+  </PropertyGroup>
+  <PropertyGroup>
+    <GenerateManifests>false</GenerateManifests>
+  </PropertyGroup>
+  <PropertyGroup />
   <ItemGroup>
     <None Include="App.config" />
+    <None Include="..\..\App Change Resolution\App Change Resolution\Properties\app.manifest">
+      <Link>Properties\app.manifest</Link>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="GAME.cs">

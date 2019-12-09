@@ -83,6 +83,7 @@
             this.ClientSize = new System.Drawing.Size(584, 585);
             this.Controls.Add(this.panel1);
             this.Controls.Add(this.menuStrip1);
+            this.DoubleBuffered = true;
             this.MainMenuStrip = this.menuStrip1;
             this.Name = "GAME";
             this.Text = "YINSH";
