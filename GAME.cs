@@ -6,7 +6,7 @@ namespace YINSH
 {
     public partial class GAME : Form
     {
-        Panel Map_Layer;
+        Panel panel;
 
         //맵
         double width;
@@ -21,6 +21,10 @@ namespace YINSH
         //실제 좌표를 담은 보드게임 좌표
         PointF[,] Game_Point = new PointF[0, 0];
 
+        //마우스 위치에 따른 포인트 위치
+        Point Node_Point;//노드 위치
+        bool[,] Node_Bool = new bool[0, 0];//노드 
+
         public GAME()
         {
             InitializeComponent();
@@ -29,22 +33,60 @@ namespace YINSH
 
         private void Init()
         {
-            Map_Layer = panel1;//그려지는 판
-            width = Map_Layer.Width;
-            height = Map_Layer.Height;
+            panel = panel1;//그려지는 판
+            width = panel.Width;
+            height = panel.Height;
 
             //Game_Point, Ring, Marker 맵 크기만큼 배열[x, y] 정의
             int length = (Map_Size * 2) + 1;
             Game_Point = new PointF[length, length];
+            Node_Bool = new bool[length, length];
         }
 
         private void panel1_Paint(object sender, PaintEventArgs e)
         {
-            Map_Drawing(Map_Layer);
+            Map();
+        }
+
+        private void panel1_MouseMove(object sender, MouseEventArgs e)
+        {
+            Node_Drawing(panel, new Point(e.X, e.Y));
+        }
+
+        private void Map()
+        {
+            Map_Drawing(panel);
             LinePos(width, height);
         }
 
-        #region 그리는 수학 함수들 정의
+        #region 그리는 함수들 정의
+        private void Node_Drawing(Panel Node, Point Cursor_Point)
+        {
+            Graphics g = Node.CreateGraphics();//그래픽 담당
+            Pen pen = new Pen(Color.Black, 1);//그리는 펜, 색깔, 두께
+
+            int Size = LineSize / Map_Size;//한칸 길이
+            int length = (Map_Size * 2) + 1;//배열 길이
+
+            for (int i = 0; i < length; i++)
+            {
+                for (int j = 0; j < length; j++)
+                {
+                    if (Game_Point[i, j] != new PointF(0, 0) && Node_Bool[i, j] && Collision_Circle(Game_Point[i, j], Size / 2, Cursor_Point))
+                    {
+                        this.Refresh();
+                        Node_Bool[Node_Point.X, Node_Point.Y] = true;
+                        Node_Point = new Point(i, j);
+                        Node_Bool[i, j] = false;
+                        g.DrawEllipse(pen, Game_Point[i, j].X - (Size / 2), Game_Point[i, j].Y - (Size / 2), Size, Size);//게임 좌표 확인
+                        break;
+                    }
+                }
+            }
+            g.Dispose();
+            pen.Dispose();
+        }
+
         void Map_Drawing(Panel Map)
         {
             Graphics g = Map.CreateGraphics();//그래픽 담당
@@ -115,13 +157,15 @@ namespace YINSH
                 Size * 2는 처음에 자른 크기 복구
                 */
             }
+            g.Dispose();
+            pen.Dispose();
         }
 
         void LinePos(double width, double height)
         {
             int Size = LineSize / Map_Size;
             //첫째줄
-            Game_Position(180, 10, width / 2, height / 2, Size, 1, 5, Map_Size);
+            Game_Pos(180, 10, width / 2, height / 2, Size, 1, 5, Map_Size);
             //둘째줄~다섯째줄
             for (int i = 4; i > 0; i--)
             {
@@ -129,10 +173,10 @@ namespace YINSH
                 PointF Center_Point = new PointF(Center_Move(width / 2, Seg_X(angle, 0, (Size * Map_Size) - (Size * (5 - i)))),
                                                 Center_Move(height / 2, Seg_Y(angle, 0, (Size * Map_Size) - (Size * (5 - i)))));//이동 가능한 그림좌표 범위
 
-                Game_Position(120, i + Map_Size, Center_Point.X, Center_Point.Y, Size, i - 5, 6, 6 - i);
+                Game_Pos(120, i + Map_Size, Center_Point.X, Center_Point.Y, Size, i - 5, 6, 6 - i);
             }
             //여섯째줄(X축)
-            Game_Position(120, 5, width / 2, height / 2, Size, -4, 5, Map_Size);
+            Game_Pos(120, 5, width / 2, height / 2, Size, -4, 5, Map_Size);
             //일곱째줄~열째줄
             for (int i = -1; i > -5; i--)
             {
@@ -140,16 +184,16 @@ namespace YINSH
                 PointF Center_Point = new PointF(Center_Move(width / 2, Seg_X(angle, 0, (Size * Map_Size) - (Size * (5 - i)))),
                                                 Center_Move(height / 2, Seg_Y(angle, 0, (Size * Map_Size) - (Size * (5 - i)))));//이동 가능한 그림좌표 범위
 
-                Game_Position(120, i + Map_Size, Center_Point.X, Center_Point.Y, Size, -4, i + 7, 6);
+                Game_Pos(120, i + Map_Size, Center_Point.X, Center_Point.Y, Size, -4, i + 7, 6);
             }
             //열한째줄(마지막줄)
-            Game_Position(60, 0, width / 2, height / 2, Size, -4, 0, Map_Size);
+            Game_Pos(60, 0, width / 2, height / 2, Size, -4, 0, Map_Size);
         }
 
         /// <summary>
         /// 방향, 몇번째 줄, 중심x, 중심y, 이동, 시작, 끝, 반복
         /// </summary>
-        void Game_Position(int angle, int line, double width, double height, int move, int start, int end, int count)
+        void Game_Pos(int angle, int line, double width, double height, int move, int start, int end, int count)
         {
             int Size = LineSize / Map_Size;
             PointF Center_Point = new PointF(Center_Move(width, Seg_X(angle, 0, (move * count))),
@@ -159,6 +203,7 @@ namespace YINSH
             {
                 Game_Point[i + Map_Size, line] = new PointF(Center_Move(Center_Point.X, Seg_X(angle, 0, move)),
                                                             Center_Move(Center_Point.Y, Seg_Y(angle, 0, move)));
+                Node_Bool[i + Map_Size, line] = true;
                 move += Size;
             }
         }
@@ -200,6 +245,21 @@ namespace YINSH
         {
             double radian = (Math.PI / 180) * angle;
             return radian;
+        }
+
+        /// <summary>
+        /// 원 충돌범위
+        /// </summary>
+        bool Collision_Circle(PointF point, float r, Point Cursor_Point)//x축 y축 원 반지름, 마우스x 마우스y
+        {
+            double x = point.X - Cursor_Point.X;
+            double y = point.Y - Cursor_Point.Y;
+
+            double length = Math.Sqrt((x * x) + (y * y));
+            if (length <= r)
+                return true;
+            else
+                return false;
         }
         #endregion
     }
