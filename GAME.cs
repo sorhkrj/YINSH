@@ -72,13 +72,14 @@ namespace YINSH
             {
                 for (int j = 0; j < length; j++)
                 {
+                    //Game_Point 위에 마우스를 올렸을 때
                     if (Game_Point[i, j] != new PointF(0, 0) && Node_Bool[i, j] && Collision_Circle(Game_Point[i, j], Size / 2, Cursor_Point))
                     {
-                        this.Refresh();
-                        Node_Bool[Node_Point.X, Node_Point.Y] = true;
+                        this.Refresh();//다시 그리기
+                        Node_Bool[Node_Point.X, Node_Point.Y] = true;//다시 그릴 수 있도록 true
                         Node_Point = new Point(i, j);
-                        Node_Bool[i, j] = false;
-                        g.DrawEllipse(pen, Game_Point[i, j].X - (Size / 2), Game_Point[i, j].Y - (Size / 2), Size, Size);//게임 좌표 확인
+                        Node_Bool[i, j] = false;//같은 자리에서 다시 그리지 않기 위해 false
+                        g.DrawEllipse(pen, Game_Point[i, j].X - (Size / 2), Game_Point[i, j].Y - (Size / 2), Size, Size);// 그리기
                         break;
                     }
                 }
