@@ -8,6 +8,19 @@
         private System.ComponentModel.IContainer components = null;
 
         /// <summary>
+        /// 깜빡거리는 현상 완화
+        /// </summary>
+        protected override System.Windows.Forms.CreateParams CreateParams
+        {
+            get
+            {
+                System.Windows.Forms.CreateParams handleparam = base.CreateParams;
+                handleparam.ExStyle |= 0x02000000;
+                return handleparam;
+            }
+        }
+
+        /// <summary>
         /// Clean up any resources being used.
         /// </summary>
         /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
@@ -95,22 +108,10 @@
         }
 
         #endregion
-
-        private System.Windows.Forms.Panel panel1 = new DoubleBufferPanel();
+        private System.Windows.Forms.Panel panel1;
         private System.Windows.Forms.MenuStrip menuStrip1;
         private System.Windows.Forms.ToolStripMenuItem 메뉴ToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem 설정ToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem 끝내기ToolStripMenuItem;
-    }
-
-    public class DoubleBufferPanel : System.Windows.Forms.Panel
-    {
-        public DoubleBufferPanel()
-        {
-            this.SetStyle(System.Windows.Forms.ControlStyles.DoubleBuffer, true);
-            this.SetStyle(System.Windows.Forms.ControlStyles.UserPaint, true);
-            this.SetStyle(System.Windows.Forms.ControlStyles.AllPaintingInWmPaint, true);
-            this.UpdateStyles();
-        }
     }
 }
