@@ -4,13 +4,30 @@ using System.Windows.Forms;
 
 namespace YINSH
 {
+    /// <summary>
+    /// 분할 클래스 변수, 함수 모아두는 Method 클래스
+    /// </summary>
     public partial class GAME : Form
     {
         #region 변수
-
         //보드
         Panel panel;
         Bitmap Board;
+
+        //Board와 마찬가지로
+        //Bitmap Ring에 Drawing Ring하고 look
+        //Bitmap Marker에 Drawing Marker하고 look
+
+        #region 컴포넌트
+        //Ring, Marker 인스턴스 생성
+        Component Ring = Component.Instance;
+        Component Marker = Component.Instance;
+        enum Item
+        {
+            Ring,
+            Marker
+        }
+        #endregion
 
         //맵 크기
         double width;
@@ -25,59 +42,95 @@ namespace YINSH
         //실제 좌표를 담은 보드게임 좌표
         PointF[,] Game_Point = new PointF[0, 0];
 
-        //마우스 위치에 따른 노드 위치
         Point Cursor_Point;//마우스 위치
-        Point Node_Point;//노드 위치
-        bool[,] Node_Bool = new bool[0, 0];//노드
-
+        bool Cursor_Out = true;//마우스가 맵 밖으로 나갔는지 확인
         #endregion
 
         #region 함수
-        private void Node_Drawing()
+
+        #region 컴포넌트
+        /// <summary>
+        /// 노드를 좌표 위에 그린다
+        /// </summary>
+        private void Component_Drawing(Component component, Item set_item, Color color)
         {
             Graphics g = panel.CreateGraphics();//그래픽 담당
-            Pen pen = new Pen(Color.Black, 1);//그리는 펜, 색깔, 두께
+            int thickness = 6;//Ring 두께
+            Pen Ring_pen = new Pen(color, thickness);//Ring 색깔, 두께
+            Pen Marker_pen = new Pen(Color.Black);//Marker 테두리 색깔
+            Brush Marker_brush = new SolidBrush(color);//Marker 색깔
 
             int Size = LineSize / Map_Size;//한칸 길이
             int length = (Map_Size * 2) + 1;//배열 길이
+            int Ring_Size = Size - thickness;//Ring 크기
+            int Marker_Size = Size - (thickness * 2);//Marker 크기
 
             for (int i = 0; i < length; i++)
             {
                 for (int j = 0; j < length; j++)
                 {
                     //Game_Point 위에 마우스를 올렸을 때
-                    if (Game_Point[i, j] != new PointF(0, 0) && !Node_Bool[i, j] && Collision_Circle(Game_Point[i, j], Size / 2, Cursor_Point))
+                    if (Game_Point[i, j] != new PointF(0, 0) && !component.Set[i, j] && Collision_Circle(Game_Point[i, j], Size / 2, Cursor_Point))
                     {
-                        g.DrawEllipse(pen, Game_Point[i, j].X - (Size / 2), Game_Point[i, j].Y - (Size / 2), Size, Size);// 그리기
-                    }
-                }
-            }
-            g.Dispose();
-            pen.Dispose();
-        }
-
-        private void NodePos()
-        {
-            int Size = LineSize / Map_Size;//한칸 길이
-            int length = (Map_Size * 2) + 1;//배열 길이
-
-            for (int i = 0; i < length; i++)
-            {
-                for (int j = 0; j < length; j++)
-                {
-                    //Game_Point 위에 마우스를 올렸을 때
-                    if (Game_Point[i, j] != new PointF(0, 0) && Node_Bool[i, j] && Collision_Circle(Game_Point[i, j], Size / 2, Cursor_Point))
-                    {
-                        Node_Bool[Node_Point.X, Node_Point.Y] = true;//다시 그릴 수 있도록 true
-                        Node_Point = new Point(i, j);
-                        Node_Bool[i, j] = false;//같은 자리에서 다시 그리지 않기 위해 false
-                        this.Refresh();
+                        if (set_item == Item.Ring)
+                        {
+                            g.DrawEllipse(Ring_pen, Game_Point[i, j].X - (Ring_Size / 2), Game_Point[i, j].Y - (Ring_Size / 2), Ring_Size, Ring_Size);// Ring 그리기
+                        }
+                        if(set_item == Item.Marker)
+                        {
+                            g.DrawEllipse(Marker_pen, Game_Point[i, j].X - (Marker_Size / 2) - 1, Game_Point[i, j].Y - (Marker_Size / 2) - 1, Marker_Size + 2, Marker_Size + 2);// Marker 테두리
+                            g.FillEllipse(Marker_brush, Game_Point[i, j].X - (Marker_Size / 2), Game_Point[i, j].Y - (Marker_Size / 2), Marker_Size, Marker_Size);// Marker 채우기
+                        }
                         break;
                     }
                 }
             }
+            g.Dispose();
+            Ring_pen.Dispose();
+            Marker_pen.Dispose();
+            Marker_brush.Dispose();
         }
 
+        /// <summary>
+        /// 보드 좌표 위에 노드가 있는지 확인
+        /// </summary>
+        private void ComponentPos(Component component)
+        {
+            int Size = LineSize / Map_Size;//한칸 길이
+            int length = (Map_Size * 2) + 1;//배열 길이
+
+            for (int i = 0; i < length; i++)
+            {
+                for (int j = 0; j < length; j++)
+                {
+                    //Game_Point 위에 마우스를 올렸을 때
+                    if (Game_Point[i, j] != new PointF(0, 0))
+                    {
+                        if (component.Set[i, j] && Collision_Circle(Game_Point[i, j], Size / 2, Cursor_Point))
+                        {
+                            Cursor_Out = true;
+                            component.Set[component.point.X, component.point.Y] = true;//다시 그릴 수 있도록 true
+                            component.point = new Point(i, j);
+                            component.Set[i, j] = false;//같은 자리에서 다시 그리지 않기 위해 false
+                            this.Refresh();
+                            break;
+                        }
+                        else if (!component.Set[i, j] && !Collision_Circle(Game_Point[i, j], Size / 2, Cursor_Point))
+                        {
+                            if (Cursor_Out)//커서가 보드 좌표 밖으로 나가면
+                            {
+                                this.Refresh();//다시 그리기
+                            }
+                            Cursor_Out = false;
+                            component.Set[component.point.X, component.point.Y] = true;//다시 그릴 수 있도록 true
+                        }
+                    }
+                }
+            }
+        }
+        #endregion
+
+        #region 맵
         /// <summary>
         /// Board를 panel에 보여준다
         /// </summary>
@@ -178,6 +231,9 @@ namespace YINSH
             pen.Dispose();
         }
 
+        /// <summary>
+        /// Board좌표에 실제 좌표를 지정해준다
+        /// </summary>
         void LinePos(double width, double height)
         {
             int Size = LineSize / Map_Size;
@@ -220,10 +276,12 @@ namespace YINSH
             {
                 Game_Point[i + Map_Size, line] = new PointF(Center_Move(Center_Point.X, Seg_X(angle, 0, move)),
                                                             Center_Move(Center_Point.Y, Seg_Y(angle, 0, move)));
-                Node_Bool[i + Map_Size, line] = true;
+                Ring.Set[i + Map_Size, line] = true;
+                Marker.Set[i + Map_Size, line] = true;
                 move += Size;
             }
         }
+        #endregion
 
         #endregion
 
@@ -285,4 +343,26 @@ namespace YINSH
 
         #endregion
     }
+
+    #region Ring, Marker 생성할 컴포넌트 (싱글톤 패턴)
+    public class Component
+    {
+        private static Component instance;
+        private Component() { }
+        public static Component Instance
+        {
+            get
+            {
+                if (instance == null)
+                {
+                    instance = new Component();
+                }
+                return instance;
+            }
+        }
+
+        public Point point = new Point();
+        public bool[,] Set = new bool[0, 0];
+    }
+    #endregion
 }
