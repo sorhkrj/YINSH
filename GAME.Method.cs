@@ -1,35 +1,23 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 
 namespace YINSH
 {
     /// <summary>
-    /// 분할 클래스 변수, 함수 모아두는 Method 클래스
+    /// 분할 클래스 변수, 함수 모아두는 Method Class
     /// </summary>
     public partial class GAME : Form
     {
         #region 변수
-        //보드
+        #region Draw Image
         Panel panel;
         Bitmap Board;
-
-        //Board와 마찬가지로
-        //Bitmap Ring에 Drawing Ring하고 look
-        //Bitmap Marker에 Drawing Marker하고 look
-
-        #region 컴포넌트
-        //Ring, Marker 인스턴스 생성
-        Component Ring = Component.Instance;
-        Component Marker = Component.Instance;
-        enum Item
-        {
-            Ring,
-            Marker
-        }
+        Bitmap Component_Layer;
         #endregion
 
-        //맵 크기
+        #region Map Data
         double width;
         double height;
 
@@ -39,62 +27,151 @@ namespace YINSH
 
         int angle;//각도
 
-        //실제 좌표를 담은 보드게임 좌표
-        PointF[,] Game_Point = new PointF[0, 0];
+        PointF[,] Game_Point = new PointF[0, 0];//실제 좌표를 담은 보드게임 좌표
+        #endregion
 
+        #region Component Data
+        /// <summary>
+        /// None, Ring, Marker
+        /// </summary>
+        enum Item
+        {
+            None,
+            Ring,
+            Marker
+        }
+        //Ring, Marker 설치 좌표
+        Item[,] Ring_Point = new Item[0, 0];
+        Item[,] Marker_Point = new Item[0, 0];
+        Point Component_Point = new Point();
+        #endregion
+
+        #region Mouse Data
         Point Cursor_Point;//마우스 위치
-        bool Cursor_Out = true;//마우스가 맵 밖으로 나갔는지 확인
+        #endregion
+
+        #region Turn Data
+        int Turn;//반복
+        int Turn_Count;//Turn 횟수
+        /// <summary>
+        /// YINSH Player White & Black
+        /// </summary>
+        List<Color> Turn_Color = new List<Color>();//Turn 색깔
+        #endregion
         #endregion
 
         #region 함수
+        #region 규칙
+        void Rule()
+        {
+            if (Turn_Count <= 10)
+                Component(Ring_Point, Item.Ring);
+            else
+                Component(Marker_Point, Item.Marker);
+            //Marker Set -> Ring Move
+        }
+
+        void Turn_System()
+        {
+            Turn_Count++;
+            Turn++;
+            Turn = (Turn_Count % Turn_Color.Count == 0) ? 0 : Turn;
+        }
+
+        void Turn_Clear()
+        {
+            Turn_Color.Clear();
+            Turn_Color.Add(Color.White);
+            Turn_Color.Add(Color.Black);
+            Turn = -1;
+            Turn_Count = -1;
+        }
+        #endregion
 
         #region 컴포넌트
+
+        void Component(Item[,] component, Item set_item)
+        {
+            ComponentPos(component, set_item);
+            Component_Drawing(component, set_item, Turn_Color[Turn]);
+        }
+
+        /// <summary>
+        /// Component_Layer를 panel에 보여준다
+        /// </summary>
+        void Component_Image()
+        {
+            Graphics g = panel.CreateGraphics();
+            g.DrawImage(Component_Layer, new Point(0, 0));
+            g.Dispose();
+        }
+
         /// <summary>
         /// 노드를 좌표 위에 그린다
         /// </summary>
-        private void Component_Drawing(Component component, Item set_item, Color color)
+        void Component_Drawing(Item[,] component, Item set_item, Color color)
         {
-            Graphics g = panel.CreateGraphics();//그래픽 담당
-            int thickness = 6;//Ring 두께
-            Pen Ring_pen = new Pen(color, thickness);//Ring 색깔, 두께
-            Pen Marker_pen = new Pen(Color.Black);//Marker 테두리 색깔
+            Graphics g = Graphics.FromImage(Component_Layer);//그래픽 담당
+            int Ring_thickness = 6;//Ring 두께
+            int Border_thikness = 3;
+
+            Pen Ring_pen = new Pen(color, Ring_thickness);//Ring Color, Thickness
+            Pen Border_pen = new Pen(Color.Blue, Border_thikness);//Marker's Border Color,Thickness
             Brush Marker_brush = new SolidBrush(color);//Marker 색깔
 
             int Size = LineSize / Map_Size;//한칸 길이
             int length = (Map_Size * 2) + 1;//배열 길이
-            int Ring_Size = Size - thickness;//Ring 크기
-            int Marker_Size = Size - (thickness * 2);//Marker 크기
+            int Ring_Size = Size - (Ring_thickness * 2);//Ring 크기
+            int Marker_Size = Size - ((Ring_thickness + Border_thikness) * 2);//Marker 크기
 
             for (int i = 0; i < length; i++)
             {
                 for (int j = 0; j < length; j++)
                 {
                     //Game_Point 위에 마우스를 올렸을 때
-                    if (Game_Point[i, j] != new PointF(0, 0) && !component.Set[i, j] && Collision_Circle(Game_Point[i, j], Size / 2, Cursor_Point))
+                    if (Game_Point[i, j] != new PointF(0, 0) && component[i, j] != Item.None && Collision_Circle(Game_Point[i, j], Size / 2, Cursor_Point))
                     {
                         if (set_item == Item.Ring)
                         {
-                            g.DrawEllipse(Ring_pen, Game_Point[i, j].X - (Ring_Size / 2), Game_Point[i, j].Y - (Ring_Size / 2), Ring_Size, Ring_Size);// Ring 그리기
+                            g.DrawEllipse(Border_pen, Game_Point[i, j].X - ((Ring_Size + Ring_thickness) / 2),
+                                                      Game_Point[i, j].Y - ((Ring_Size + Ring_thickness) / 2),
+                                                      Ring_Size + Ring_thickness,
+                                                      Ring_Size + Ring_thickness);//Ring In Border
+                            g.DrawEllipse(Border_pen, Game_Point[i, j].X - (Marker_Size / 2),
+                                                      Game_Point[i, j].Y - (Marker_Size / 2),
+                                                      Marker_Size,
+                                                      Marker_Size);//Ring In Border
+                            g.DrawEllipse(Ring_pen, Game_Point[i, j].X - ((Ring_Size + 0.6f) / 2),
+                                                    Game_Point[i, j].Y - ((Ring_Size + 0.4f) / 2),
+                                                    Ring_Size,
+                                                    Ring_Size);//Ring Draw
                         }
                         if(set_item == Item.Marker)
                         {
-                            g.DrawEllipse(Marker_pen, Game_Point[i, j].X - (Marker_Size / 2) - 1, Game_Point[i, j].Y - (Marker_Size / 2) - 1, Marker_Size + 2, Marker_Size + 2);// Marker 테두리
-                            g.FillEllipse(Marker_brush, Game_Point[i, j].X - (Marker_Size / 2), Game_Point[i, j].Y - (Marker_Size / 2), Marker_Size, Marker_Size);// Marker 채우기
+                            g.DrawEllipse(Border_pen, Game_Point[i, j].X - (Marker_Size / 2), 
+                                                      Game_Point[i, j].Y - (Marker_Size / 2),
+                                                      Marker_Size, 
+                                                      Marker_Size);//Marker Border
+                            g.FillEllipse(Marker_brush, Game_Point[i, j].X - (Marker_Size / 2), 
+                                                        Game_Point[i, j].Y - (Marker_Size / 2), 
+                                                        Marker_Size, 
+                                                        Marker_Size);//Marker Draw
                         }
+                        this.Refresh();
                         break;
                     }
                 }
             }
             g.Dispose();
             Ring_pen.Dispose();
-            Marker_pen.Dispose();
+            Border_pen.Dispose();
             Marker_brush.Dispose();
         }
 
         /// <summary>
         /// 보드 좌표 위에 노드가 있는지 확인
         /// </summary>
-        private void ComponentPos(Component component)
+        void ComponentPos(Item[,] component, Item set_item)
         {
             int Size = LineSize / Map_Size;//한칸 길이
             int length = (Map_Size * 2) + 1;//배열 길이
@@ -103,26 +180,22 @@ namespace YINSH
             {
                 for (int j = 0; j < length; j++)
                 {
-                    //Game_Point 위에 마우스를 올렸을 때
                     if (Game_Point[i, j] != new PointF(0, 0))
                     {
-                        if (component.Set[i, j] && Collision_Circle(Game_Point[i, j], Size / 2, Cursor_Point))
+                        //Game_Point 위에 마우스를 올렸을 때
+                        if (component[i, j] == Item.None && Collision_Circle(Game_Point[i, j], Size / 2, Cursor_Point))
                         {
-                            Cursor_Out = true;
-                            component.Set[component.point.X, component.point.Y] = true;//다시 그릴 수 있도록 true
-                            component.point = new Point(i, j);
-                            component.Set[i, j] = false;//같은 자리에서 다시 그리지 않기 위해 false
-                            this.Refresh();
+                            Turn_System();
+                            component[Component_Point.X, Component_Point.Y] = Item.None;//다시 그릴 수 있도록 true
+                            Component_Point = new Point(i, j);
+                            component[i, j] = set_item;//같은 자리에서 다시 그리지 않기 위해 false
+                            label1.Text = "Turn : " + Turn_Count + ", (" + (i - 5) + ", " + (j - 5) + ")";
                             break;
                         }
-                        else if (!component.Set[i, j] && !Collision_Circle(Game_Point[i, j], Size / 2, Cursor_Point))
+                        //마우스가 Game_Point밖으로 벗어났을 때
+                        else if (component[i, j] != Item.None && !Collision_Circle(Game_Point[i, j], Size / 2, Cursor_Point))
                         {
-                            if (Cursor_Out)//커서가 보드 좌표 밖으로 나가면
-                            {
-                                this.Refresh();//다시 그리기
-                            }
-                            Cursor_Out = false;
-                            component.Set[component.point.X, component.point.Y] = true;//다시 그릴 수 있도록 true
+                            component[Component_Point.X, Component_Point.Y] = Item.None;//다시 그릴 수 있도록 true
                         }
                     }
                 }
@@ -131,10 +204,21 @@ namespace YINSH
         #endregion
 
         #region 맵
+
+        /// <summary>
+        /// Board에 Map을 그리고 저장한 뒤
+        /// Map 좌표를 정의한다
+        /// </summary>
+        void Map()
+        {
+            Map_Drawing();
+            LinePos(width, height);
+        }
+
         /// <summary>
         /// Board를 panel에 보여준다
         /// </summary>
-        private void Board_Image()
+        void Board_Image()
         {
             Graphics g = panel.CreateGraphics();
             g.DrawImage(Board, new Point(0, 0));
@@ -142,21 +226,10 @@ namespace YINSH
         }
 
         /// <summary>
-        /// Board에 Map을 그리고 저장한 뒤
-        /// Map 좌표를 정의한다
-        /// </summary>
-        private void Map()
-        {
-            Map_Drawing();
-            LinePos(width, height);
-        }
-
-        /// <summary>
         /// Board에 맵 그림을 그린다
         /// </summary>
         void Map_Drawing()
         {
-            Board = new Bitmap(panel.Width, panel.Height);
             Graphics g = Graphics.FromImage(Board);//그래픽 담당
             Pen pen = new Pen(Color.Black, 1);//그리는 펜, 색깔, 두께
 
@@ -167,24 +240,7 @@ namespace YINSH
 
             PointF[,] Map_Point = new PointF[Map_Size, Map_Hex];//맵 좌표
 
-            /*
-             * angle 방향
-             * 1번 방향 60도
-             * 2번 방향 120도
-             * 3번 방향 180도
-             * 4번 방향 240도
-             * 5번 방향 300도
-             * 6번 방향 360도
-             * 꼭짓점
-             * 꼭짓점좌표는 Map_X, Map_Y에 기록 되어 있다
-             * Map_X, Map_Y -> Map_Point로 교체
-             * Map_Point는 맵을 그리기 위한 최소한의 좌표를 기록하는 변수
-             * Draw_Point는 맵을 그리는 좌표
-             */
-
-            /*
-             * 꼭짓점
-             */
+            #region 꼭짓점 그리기
             for (int j = 0; j < Map_Size; j++)//맵의 사이즈만큼 등분한다
             {
                 for (int i = 0; i < Map_Hex; i++)//정육각형이므로 6방향
@@ -203,10 +259,9 @@ namespace YINSH
                 }
                 y -= Size;
             }
+            #endregion
 
-            /*
-             * 선분
-             */
+            #region 선분 그리기
             y = 0 - (Size);//마지막 꼭짓점 안그려지는 만큼 일부러 잘랐다
             angle = (180 - (180 - (360 / Map_Hex)) / 2) + (360 / Map_Hex);//선분 길이 늘리기
             for (int j = 0; j < Map_Size; j++)//맵의 사이즈만큼 반복한다
@@ -227,6 +282,7 @@ namespace YINSH
                 Size * 2는 처음에 자른 크기 복구
                 */
             }
+            #endregion
             g.Dispose();
             pen.Dispose();
         }
@@ -257,7 +313,7 @@ namespace YINSH
                 PointF Center_Point = new PointF(Center_Move(width / 2, Seg_X(angle, 0, (Size * Map_Size) - (Size * (5 - i)))),
                                                 Center_Move(height / 2, Seg_Y(angle, 0, (Size * Map_Size) - (Size * (5 - i)))));//이동 가능한 그림좌표 범위
 
-                Game_Pos(120, i + Map_Size, Center_Point.X, Center_Point.Y, Size, -4, i + 7, 6);
+                Game_Pos(120, i + Map_Size, Center_Point.X, Center_Point.Y, Size, -5, i + 6, 6);
             }
             //열한째줄(마지막줄)
             Game_Pos(60, 0, width / 2, height / 2, Size, -4, 0, Map_Size);
@@ -276,17 +332,13 @@ namespace YINSH
             {
                 Game_Point[i + Map_Size, line] = new PointF(Center_Move(Center_Point.X, Seg_X(angle, 0, move)),
                                                             Center_Move(Center_Point.Y, Seg_Y(angle, 0, move)));
-                Ring.Set[i + Map_Size, line] = true;
-                Marker.Set[i + Map_Size, line] = true;
                 move += Size;
             }
         }
         #endregion
-
         #endregion
 
         #region 수학 식
-
         /// <summary>
         /// 지정된 좌표로부터
         /// </summary>
@@ -340,29 +392,6 @@ namespace YINSH
             else
                 return false;
         }
-
         #endregion
     }
-
-    #region Ring, Marker 생성할 컴포넌트 (싱글톤 패턴)
-    public class Component
-    {
-        private static Component instance;
-        private Component() { }
-        public static Component Instance
-        {
-            get
-            {
-                if (instance == null)
-                {
-                    instance = new Component();
-                }
-                return instance;
-            }
-        }
-
-        public Point point = new Point();
-        public bool[,] Set = new bool[0, 0];
-    }
-    #endregion
 }
