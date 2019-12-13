@@ -12,6 +12,8 @@
     ComponentPos();//Component's Position
 
     Component_Drawing();//Draw Component On A panel
+
+    Component_Image();//Draw Component's Image On A panel
   
   3
     
