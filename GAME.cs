@@ -16,31 +16,35 @@ namespace YINSH
 
         private void Init()
         {
+            #region 인스턴스
+            Map map = Map.GetInstance;
+            Component component = Component.GetInstance;
+            #endregion
+
             //그려지는 판
             panel = panel1;
             width = panel.Width;
             height = panel.Height;
 
-            Board = new Bitmap(panel.Width, panel.Height);
-            Component_Layer = new Bitmap(panel.Width, panel.Height);
+            map.Board = new Bitmap(panel.Width, panel.Height);
+            component.Layer = new Bitmap(panel.Width, panel.Height);
 
             //Game_Point, Ring_Point, Marker_Point 맵 크기만큼 배열[x, y] 정의
-            int length = (Map_Size * 2) + 1;
-            Game_Point = new PointF[length, length];
-            Ring_Point = new Item[length, length];
-            Marker_Point = new Item[length, length];
+            int length = (Map.Size * 2) + 1;
+            map.Point = new PointF[length, length];
+            component.Ring_Point = new Component.Item[length, length];
+            component.Marker_Point = new Component.Item[length, length];
 
             //Map 그리기 및 좌표 정의
-            Map();
+            map.System();
 
             //Turn 초기화
-            Turn_Clear();
+            turn.Setting();
         }
 
         private void panel1_Paint(object sender, PaintEventArgs e)
         {
-            Board_Image();
-            Component_Image();
+            Image();
         }
 
         private void panel1_MouseMove(object sender, MouseEventArgs e)
@@ -51,6 +55,7 @@ namespace YINSH
         private void panel1_MouseClick(object sender, MouseEventArgs e)
         {
             Rule();
+            this.Refresh();
         }
     }
 }

@@ -49,6 +49,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Component.cs" />
     <Compile Include="GAME.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -59,7 +60,9 @@
       <DependentUpon>GAME.cs</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Map.cs" />
     <Compile Include="Program.cs" />
+    <Compile Include="Turn.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />
