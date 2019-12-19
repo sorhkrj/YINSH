@@ -18,14 +18,15 @@ namespace YINSH
                 return Instance;
             }
         }
+
         #region 변수
         /// <summary>
         /// YINSH Player White & Black
         /// </summary>
-        public List<Color> Player = new List<Color>();//Turn 색깔
-        public int[] Each = new int[0];//개인 Turn 횟수
-        int Count;//Turn 총 횟수
-        public int User;//유저 차례
+        public List<Color> Player = new List<Color>();
+        public int[] Each = new int[0];
+        int Count;
+        public int User;
         public bool Next;
         public bool Check;
         #endregion
@@ -39,7 +40,7 @@ namespace YINSH
                 {
                     Each[User]++;
                     Count = 0;
-                    for (int count = 0; count < Each.Length; count++)
+                    for (var count = 0; count < Each.Length; count++)
                     {
                         Count += Each[count];
                     }
