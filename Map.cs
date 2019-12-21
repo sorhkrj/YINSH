@@ -34,23 +34,37 @@ namespace YINSH
 
         // 실제 좌표를 담은 보드게임 좌표
         public PointF[,] Point = new PointF[0, 0];
+
+        // 보드게임 문자 좌표 글자
+        readonly public string[] Coord_Number = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11" };
+        readonly public string[] Coord_Alphabet = { "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K" };
         #endregion
 
         #region 함수
+        public void Setting(Size size, int length)
+        {
+            // Board, Layer, Point 맵 크기만큼 배열[x, y] 정의
+            Board = new Bitmap(size.Width, size.Width);
+            Point = new PointF[length, length];
+
+            // Map Draw & Position
+            System(size);
+        }
+
         /// <summary>
         /// Board에 Map을 그리고 저장한 뒤
         /// Map 좌표를 정의한다
         /// </summary>
         void System(Size size)
         {
-            Drawing(size);
+            Draw(size);
             Line(size);
         }
 
         /// <summary>
         /// Board에 맵 그림을 그린다
         /// </summary>
-        void Drawing(Size board)
+        void Draw(Size board)
         {
             // 그래픽 담당
             using (Graphics g = Graphics.FromImage(Board))
@@ -58,60 +72,60 @@ namespace YINSH
                 // 그리는 펜, 색깔, 두께
                 using (Pen pen = new Pen(Color.Black, 1))
                 {
-                    var Size = Length / Map.Size;
-                    var tail = Map.Size * 2;
+                    var side = Length / Size;
+                    var tail = Size * 2;
                     angle = 0;
+
+                    // 보드 좌표
+                    PointF[,] Map_Point = new PointF[Size, Hex];
                     // 좌표, 선분XY, 선분의 길이
                     int x = 0, y = Length;
 
-                    // 보드 좌표
-                    PointF[,] Map_Point = new PointF[Map.Size, Map.Hex];
-
                     #region 꼭짓점 그리기
                     // 등분
-                    for (var j = 0; j < Map.Size; j++)
+                    for (var j = 0; j < Size; j++)
                     {
                         // 방향
-                        for (var i = 0; i < Map.Hex; i++)
+                        for (var i = 0; i < Hex; i++)
                         {
-                            angle += 360 / Map.Hex;
+                            angle += 360 / Hex;
                             Map_Point[j, i] = new PointF(Center_Move(board.Width / 2, Seg_X(angle, x, y)),
                                                         Center_Move(board.Height / 2, Seg_Y(angle, x, y)));
                             PointF center = new PointF(Center_Move(board.Width / 2, 0),
                                                       Center_Move(board.Height / 2, 0));
-                            PointF Draw_Point = new PointF(Center_Move(board.Width / 2, Seg_X(angle, x, (y - Size) + tail)),
-                                                          Center_Move(board.Height / 2, Seg_Y(angle, x, (y - Size) + tail)));
+                            PointF Draw_Point = new PointF(Center_Move(board.Width / 2, Seg_X(angle, x, (y - side) + tail)),
+                                                          Center_Move(board.Height / 2, Seg_Y(angle, x, (y - side) + tail)));
                             if (j == 0)
                             {
                                 g.DrawLine(pen, center, Draw_Point);
                             }
                         }
-                        y -= Size;
+                        y -= side;
                     }
                     #endregion
 
                     #region 선분 그리기
                     // 마지막 꼭짓점 안그려지는 만큼 일부러 잘랐다
-                    y = 0 - (Size);
+                    y = 0 - (side);
                     // 선분 길이 늘리기
-                    angle = (180 - (180 - (360 / Map.Hex)) / 2) + (360 / Map.Hex);
-                    for (var j = 0; j < Map.Size; j++)
+                    angle = (180 - (180 - (360 / Hex)) / 2) + (360 / Hex);
+                    for (var j = 0; j < Size; j++)
                     {
-                        for (var i = 0; i < Map.Hex; i++)
+                        for (var i = 0; i < Hex; i++)
                         {
                             // 마지막 꼭짓점 안그려지는 만큼 일부러 잘랐다
-                            var n = (i + 1 == Map.Hex) ? 0 : i + 1;
+                            var n = (i + 1 == Hex) ? 0 : i + 1;
                             // 180도 꺽은 선분을 추가하여 선분 길이를 늘린다
                             PointF seg_1 = new PointF(Map_Point[j, i].X - Seg_X(angle, x, y + tail),
                                                       Map_Point[j, i].Y - Seg_Y(angle, x, y + tail));
                             PointF seg_2 = new PointF(Map_Point[j, n].X + Seg_X(angle, x, y + tail),
                                                       Map_Point[j, n].Y + Seg_Y(angle, x, y + tail));
                             g.DrawLine(pen, seg_1, seg_2);
-                            angle += 360 / Map.Hex;
+                            angle += 360 / Hex;
                         }
                         // 점점 작게 그릴수록 선분 길이 한칸 크기씩 늘려주기, 
-                        // Size * 2는 처음에 자른 크기 복구
-                        y += (j == 0) ? Size * 2 : Size;
+                        // size * 2는 처음에 자른 크기 복구
+                        y += (j == 0) ? side * 2 : side;
                     }
                     #endregion
                 }
@@ -123,31 +137,33 @@ namespace YINSH
         /// </summary>
         void Line(Size board)
         {
-            var Size = Length / Map.Size;
+            var side = Length / Size;
             // 첫째줄
-            Position(180, 10, board.Width / 2, board.Height / 2, Size, 1, 5, Map.Size);
+            Position(180, 10, board.Width / 2, board.Height / 2, side, 1, 5, Size);
             // 둘째줄~다섯째줄
-            for (int i = 4; i > 0; i--)
+            for (var i = 4; i > 0; i--)
             {
                 angle = 180;
-                PointF Center_Point = new PointF(Center_Move(board.Width / 2, Seg_X(angle, 0, (Size * Map.Size) - (Size * (5 - i)))),
-                                                Center_Move(board.Height / 2, Seg_Y(angle, 0, (Size * Map.Size) - (Size * (5 - i)))));//이동 가능한 그림좌표 범위
+                // 이동 가능한 그림좌표 범위
+                PointF Center_Point = new PointF(Center_Move(board.Width / 2, Seg_X(angle, 0, (side * Size) - (side * (Size - i)))),
+                                                Center_Move(board.Height / 2, Seg_Y(angle, 0, (side * Size) - (side * (Size - i)))));
 
-                Position(120, i + Map.Size, Center_Point.X, Center_Point.Y, Size, i - 5, 6, 6 - i);
+                Position(120, i + Size, Center_Point.X, Center_Point.Y, side, i - 5, 6, 6 - i);
             }
             // 여섯째줄(X축)
-            Position(120, 5, board.Width / 2, board.Height / 2, Size, -4, 5, Map.Size);
+            Position(120, 5, board.Width / 2, board.Height / 2, side, -4, 5, Size);
             // 일곱째줄~열째줄
-            for (int i = -1; i > -5; i--)
+            for (var i = -1; i > -5; i--)
             {
                 angle = 180;
-                PointF Center_Point = new PointF(Center_Move(board.Width / 2, Seg_X(angle, 0, (Size * Map.Size) - (Size * (5 - i)))),
-                                                Center_Move(board.Height / 2, Seg_Y(angle, 0, (Size * Map.Size) - (Size * (5 - i)))));//이동 가능한 그림좌표 범위
+                // 이동 가능한 그림좌표 범위
+                PointF Center_Point = new PointF(Center_Move(board.Width / 2, Seg_X(angle, 0, (side * Size) - (side * (Size - i)))),
+                                                Center_Move(board.Height / 2, Seg_Y(angle, 0, (side * Size) - (side * (Size - i)))));
 
-                Position(120, i + Map.Size, Center_Point.X, Center_Point.Y, Size, -5, i + 6, 6);
+                Position(120, i + Size, Center_Point.X, Center_Point.Y, side, -5, i + 6, 6);
             }
             // 열한째줄(마지막줄)
-            Position(60, 0, board.Width / 2, board.Height / 2, Size, -4, 0, Map.Size);
+            Position(60, 0, board.Width / 2, board.Height / 2, side, -4, 0, Size);
         }
 
         /// <summary>
@@ -155,27 +171,17 @@ namespace YINSH
         /// </summary>
         void Position(int angle, int line, double width, double height, int move, int start, int end, int count)
         {
-            var Size = Length / Map.Size;
+            var side = Length / Size;
             // 좌표밖 중심 정의
             PointF Center_Point = new PointF(Center_Move(width, Seg_X(angle, 0, (move * count))),
                                             Center_Move(height, Seg_Y(angle, 0, (move * count))));
             angle = 300;
-            for (int i = start; i < end; i++)
+            for (var i = start; i < end; i++)
             {
-                Point[i + Map.Size, line] = new PointF(Center_Move(Center_Point.X, Seg_X(angle, 0, move)),
+                Point[i + Size, line] = new PointF(Center_Move(Center_Point.X, Seg_X(angle, 0, move)),
                                                             Center_Move(Center_Point.Y, Seg_Y(angle, 0, move)));
-                move += Size;
+                move += side;
             }
-        }
-
-        public void Setting(Size size, int length)
-        {
-            // Board, Layer, Point 맵 크기만큼 배열[x, y] 정의
-            Board = new Bitmap(size.Width, size.Width);
-            Point = new PointF[length, length];
-
-            // Map Draw & Position
-            System(size);
         }
         #endregion
 

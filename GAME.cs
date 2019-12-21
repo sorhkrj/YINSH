@@ -11,7 +11,7 @@ namespace YINSH
         public GAME()
         {
             InitializeComponent();
-            Init();
+            Setting();
         }
 
         private void Panel1_Paint(object sender, PaintEventArgs e)
@@ -22,7 +22,8 @@ namespace YINSH
         private void Panel1_MouseMove(object sender, MouseEventArgs e)
         {
             component.Cursor_Point = new Point(e.X, e.Y);
-            Preview();
+            component.Preview();
+            label1.Text = component.Preview_Text;
         }
 
         private void Panel1_MouseClick(object sender, MouseEventArgs e)
