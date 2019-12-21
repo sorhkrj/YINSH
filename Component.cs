@@ -39,22 +39,22 @@ namespace YINSH
             Cursor
         }
         // Ring, Marker 설치 좌표
-        public Item[,] Ring = new Item[0, 0];
-        public Item[,] Marker = new Item[0, 0];
+        Item[,] Ring = new Item[0, 0];
+        Item[,] Marker = new Item[0, 0];
 
         // Player
-        public Color?[,] Ring_Color = new Color?[0, 0];
-        public Color?[,] Marker_Color = new Color?[0, 0];
+        Color?[,] Ring_Color = new Color?[0, 0];
+        Color?[,] Marker_Color = new Color?[0, 0];
 
         // Ring, Marker 개수
         public int[] Ring_Quantity;
         public int Marker_Quantity;
 
         // Cursor 좌표
-        public Item[,] Cursor = new Item[0, 0];
+        Item[,] Cursor = new Item[0, 0];
         public Point Cursor_Point = new Point();
-        public Point Preview_Point = new Point();
-        public bool Cursor_Out;
+        Point Preview_Point = new Point();
+        bool Cursor_Out;
 
         //좌표 텍스트
         public string Preview_Text = string.Empty;
@@ -67,7 +67,14 @@ namespace YINSH
 
             Ring = new Item[length, length];
             Marker = new Item[length, length];
-            Reset_Ring_Position(length);
+            // 준비할 때 링 설치를 위해 설치가능하도록 초기화
+            for (var i = 0; i < length; i++)
+            {
+                for (var j = 0; j < length; j++)
+                {
+                    Ring[i, j] = Item.Set;
+                }
+            }
 
             Ring_Color = new Color?[length, length];
             Marker_Color = new Color?[length, length];
@@ -80,6 +87,7 @@ namespace YINSH
             }
             Marker_Quantity = 51;
 
+            // Cursor
             Cursor = new Item[length, length];
             Cursor_Out = true;
         }
@@ -213,19 +221,14 @@ namespace YINSH
             }
         }
 
-        /// <summary>
-        /// 준비중일 때 전체에 링을 설치할 수 있도록 초기화
-        /// </summary>
-        void Reset_Ring_Position(int length)
+        bool Ready()
         {
-            // 준비할 때 링 설치를 위해 설치가능하도록 초기화
-            for (var i = 0; i < length; i++)
+            var sum = 0;
+            for(var i = 0; i < turn.Player.Count; i++)
             {
-                for (var j = 0; j < length; j++)
-                {
-                    Ring[i, j] = Item.Set;
-                }
+                sum += Ring_Quantity[i];
             }
+            return (sum == 0) ? true : false;
         }
 
         /// <summary>
@@ -261,9 +264,8 @@ namespace YINSH
                                 Marker[i, j] = Item.Set;
 
                                 // 준비가 완료된 후 턴 넘기기
-                                if (turn.Ready)
+                                if (Ready())
                                 {
-                                    Reset_Ring_Position(length);
                                     // 턴 넘기기
                                     turn.Next = true;
                                 }

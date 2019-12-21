@@ -33,7 +33,6 @@ namespace YINSH
         public int User;
         public bool Check;
         public bool Next;
-        public bool Ready;
         #endregion
 
         #region 함수
@@ -47,7 +46,6 @@ namespace YINSH
             User = 0;
             Check = false;
             Next = false;
-            Ready = false;
         }
 
         public void System()
