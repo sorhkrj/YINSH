@@ -25,7 +25,7 @@ namespace YINSH
         // 정육각형 맵 중심으로부터 6방향
         // 맵 크기 5칸
         // 길이
-        public const int Hex = 6;
+        const int Hex = 6;
         public const int Size = 5;
         public const int Length = 240;
 
@@ -41,24 +41,14 @@ namespace YINSH
         #endregion
 
         #region 함수
-        public void Setting(Size size, int length)
+        /// <summary>
+        /// Board와 게임 Point 초기화
+        /// </summary>
+        void Setting(Size size, int length)
         {
             // Board, Layer, Point 맵 크기만큼 배열[x, y] 정의
             Board = new Bitmap(size.Width, size.Width);
             Point = new PointF[length, length];
-
-            // Map Draw & Position
-            System(size);
-        }
-
-        /// <summary>
-        /// Board에 Map을 그리고 저장한 뒤
-        /// Map 좌표를 정의한다
-        /// </summary>
-        void System(Size size)
-        {
-            Draw(size);
-            Line(size);
         }
 
         /// <summary>
@@ -183,9 +173,19 @@ namespace YINSH
                 move += side;
             }
         }
+
+        public void System(Size size, int length)
+        {
+            Setting(size, length);
+            Draw(size);
+            Line(size);
+        }
         #endregion
 
         #region 수학 식
+        ///참고자료
+        ///https://ko.wikipedia.org/wiki/%ED%9A%8C%EC%A0%84%EB%B3%80%ED%99%98%ED%96%89%EB%A0%AC
+
         /// <summary>
         /// 지정된 좌표로부터
         /// </summary>

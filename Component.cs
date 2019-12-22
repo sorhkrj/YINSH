@@ -30,7 +30,7 @@ namespace YINSH
         /// </summary>
         public Bitmap Layer;
 
-        public enum Item
+        enum Item
         {
             None,
             Set,
@@ -95,8 +95,10 @@ namespace YINSH
         /// <summary>
         /// Mouse Cursor 좌표
         /// </summary>
-        public void Preview()
+        public void Preview(Point point)
         {
+            Cursor_Point = point;
+
             var side = Map.Length / Map.Size;
             var length = (Map.Size * 2) + 1;
 
@@ -137,7 +139,7 @@ namespace YINSH
         /// <summary>
         /// Layer를 지우고 Ring과 Marker를 다시 그리기
         /// </summary>
-        public void Draw_Layer()
+        void Draw_Layer()
         {
             using (Graphics g = Graphics.FromImage(Layer))
             {
@@ -221,6 +223,38 @@ namespace YINSH
             }
         }
 
+        /// <summary>
+        /// 컴포넌트 설치가 가능한지 확인 정리
+        /// </summary>
+        void CanSet_Check()
+        {
+            if (Ready())
+            {
+                var length = (Map.Size * 2) + 1;
+                Color color = turn.Player[turn.User];
+
+                for (var i = 0; i < length; i++)
+                {
+                    for (var j = 0; j < length; j++)
+                    {
+                        if (Ring[i, j] == Item.Ring)
+                        {
+                            if (Ring_Color[i, j] == color)
+                            {
+                                Marker[i, j] = Item.Set;
+                            }
+                            continue;
+                        }
+                        Ring[i, j] = Item.None;
+                        Marker[i, j] = Item.None;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// 턴을 넘길 준비가 되었는지 확인
+        /// </summary>
         bool Ready()
         {
             var sum = 0;
@@ -231,10 +265,20 @@ namespace YINSH
             return (sum == 0) ? true : false;
         }
 
+        void CanMove()
+        {
+            // 6방향 3줄
+        }
+
+        void Reverse()
+        {
+            // 링이 지나간 거리 마커 뒤집기
+        }
+
         /// <summary>
         /// 보드 좌표 위에 컴포넌트 올리기
         /// </summary>
-        void Position(Item[,] component, Item set_item)
+        void Position(Item[,] component, Color?[,] component_color, Item set_item)
         {
             // 한칸 길이
             // 배열 길이
@@ -255,29 +299,28 @@ namespace YINSH
                         {
                             // 같은 자리에서 다시 그리지 않기위해 component 설치
                             component[i, j] = set_item;
+                            component_color[i, j] = color;
                             // 좌표에 component 설치 및 기능
-                            if(set_item == Item.Ring)
+                            if (set_item == Item.Ring)
                             {
-                                Ring_Color[i, j] = color;
                                 Ring_Quantity[turn.User]--;
 
-                                Marker[i, j] = Item.Set;
-
-                                // 준비가 완료된 후 턴 넘기기
+                                // 준비가 완료된 후
                                 if (Ready())
                                 {
+                                    CanMove();
                                     // 턴 넘기기
                                     turn.Next = true;
                                 }
                                 // 컴포넌트 넘기기
                                 turn.Check = true;
                             }
-                            if(set_item == Item.Marker)
+                            if (set_item == Item.Marker)
                             {
-                                Marker_Color[i, j] = color;
                                 Marker_Quantity--;
                                 Ring_Quantity[turn.User]++;
                                 Ring[i, j] = Item.None;
+                                Reverse();
                             }
                             return;
                         }
@@ -287,18 +330,25 @@ namespace YINSH
         }
 
         /// <summary>
-        /// 컴포넌트가 존재할 때 설치
+        /// 컴포넌트 설치
         /// </summary>
-        public void System()
+        void SetPos()
         {
             if (Ring_Quantity[turn.User] > 0)
             {
-                Position(Ring, Item.Ring);
+                Position(Ring, Ring_Color, Item.Ring);
             }
             else if (Marker_Quantity > 0)
             {
-                Position(Marker, Item.Marker);
+                Position(Marker, Marker_Color, Item.Marker);
             }
+        }
+
+        public void System()
+        {
+            CanSet_Check();
+            SetPos();
+            Draw_Layer();
         }
         #endregion
 
