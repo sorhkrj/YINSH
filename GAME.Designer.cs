@@ -42,12 +42,12 @@
         private void InitializeComponent()
         {
             this.panel = new System.Windows.Forms.Panel();
+            this.label2 = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.메뉴ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.설정ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.끝내기ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.label2 = new System.Windows.Forms.Label();
             this.panel.SuspendLayout();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -64,13 +64,22 @@
             this.panel.MouseClick += new System.Windows.Forms.MouseEventHandler(this.Panel1_MouseClick);
             this.panel.MouseMove += new System.Windows.Forms.MouseEventHandler(this.Panel1_MouseMove);
             // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Location = new System.Drawing.Point(12, 534);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(157, 12);
+            this.label2.TabIndex = 1;
+            this.label2.Text = "컴포넌트, 턴, 스코어 테스트";
+            // 
             // label1
             // 
             this.label1.Location = new System.Drawing.Point(12, 529);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(560, 23);
             this.label1.TabIndex = 0;
-            this.label1.Text = "(x, y)";
+            this.label1.Text = "좌표 테스트";
             this.label1.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             // 
             // menuStrip1
@@ -103,15 +112,6 @@
             this.끝내기ToolStripMenuItem.Name = "끝내기ToolStripMenuItem";
             this.끝내기ToolStripMenuItem.Size = new System.Drawing.Size(110, 22);
             this.끝내기ToolStripMenuItem.Text = "끝내기";
-            // 
-            // label2
-            // 
-            this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(12, 534);
-            this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(29, 12);
-            this.label2.TabIndex = 1;
-            this.label2.Text = "체크";
             // 
             // GAME
             // 

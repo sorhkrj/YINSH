@@ -62,6 +62,7 @@
     </Compile>
     <Compile Include="Map.cs" />
     <Compile Include="Program.cs" />
+    <Compile Include="Score.cs" />
     <Compile Include="Turn.cs" />
   </ItemGroup>
   <ItemGroup>

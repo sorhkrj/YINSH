@@ -42,9 +42,15 @@ namespace YINSH
         Item[,] Ring = new Item[0, 0];
         Item[,] Marker = new Item[0, 0];
 
+        // 마커를 설치하고 들어올린 링 좌표
+        Point Pick = new Point();
+
         // Player
         Color?[,] Ring_Color = new Color?[0, 0];
         Color?[,] Marker_Color = new Color?[0, 0];
+
+        // 컴포넌트를 설치하면 true
+        public bool Show;
 
         // Ring, Marker 개수
         public int[] Ring_Quantity;
@@ -87,6 +93,9 @@ namespace YINSH
             }
             Marker_Quantity = 51;
 
+            // 컴포넌트를 설치하면 true Layer를 그리면 false
+            Show = false;
+
             // Cursor
             Cursor = new Item[length, length];
             Cursor_Out = true;
@@ -106,7 +115,7 @@ namespace YINSH
             {
                 for (var j = 0; j < length; j++)
                 {
-                    if (map.Point[i, j] != new PointF(0, 0))
+                    if (map.Point[i, j] != Point.Empty)
                     {
                         // 마우스를 Game_Point에 올렸을 때
                         if (Cursor[i, j] == Item.None && Collision_Circle(map.Point[i, j], side / 2, Cursor_Point))
@@ -166,7 +175,7 @@ namespace YINSH
             {
                 for (var j = 0; j < length; j++)
                 {
-                    if (map.Point[i, j] != new PointF(0, 0))
+                    if (map.Point[i, j] != Point.Empty)
                     {
                         // component자리가 채워지면 그리기
                         if (component[i, j] == set_item)
@@ -224,15 +233,46 @@ namespace YINSH
         }
 
         /// <summary>
-        /// 컴포넌트 설치가 가능한지 확인 정리
+        /// 턴을 넘길 준비가 되었는지 확인
         /// </summary>
-        void CanSet_Check()
+        bool Ready()
+        {
+            var sum = 0;
+            for (var i = 0; i < turn.Player.Count; i++)
+            {
+                sum += Ring_Quantity[i];
+            }
+            return (sum == 0) ? true : false;
+        }
+
+        /// <summary>
+        /// 마커를 설치할 수 있는 좌표
+        /// </summary>
+        void CanSet()
         {
             if (Ready())
             {
                 var length = (Map.Size * 2) + 1;
                 Color color = turn.Player[turn.User];
 
+                #region 컴포넌트 설치 위치 초기화
+                for (var i = 0; i < length; i++)
+                {
+                    for (var j = 0; j < length; j++)
+                    {
+                        if (Ring[i, j] == Item.Set)
+                        {
+                            Ring[i, j] = Item.None;
+                        }
+                        if (Marker[i, j] == Item.Set)
+                        {
+                            Marker[i, j] = Item.None;
+                        }
+                    }
+                }
+                #endregion
+
+                #region 마커를 링이 설치된 자신의 턴 색 위치에 Item.Set
                 for (var i = 0; i < length; i++)
                 {
                     for (var j = 0; j < length; j++)
@@ -243,40 +283,137 @@ namespace YINSH
                             {
                                 Marker[i, j] = Item.Set;
                             }
-                            continue;
                         }
-                        Ring[i, j] = Item.None;
-                        Marker[i, j] = Item.None;
                     }
+                }
+                #endregion
+            }
+        }
+
+        /// <summary>
+        /// 컴포넌트가 움직인 위치에 컴포넌트가 있는지 확인
+        /// </summary>
+        bool OtherComponent(Item[,] component, Point point, Item other_item)
+        {
+            if (component[point.X, point.Y] == other_item)
+            {
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// 이동할 좌표가 배열안에 있는지 확인
+        /// </summary>
+        bool IndexIn(Point Move, int i, int length)
+        {
+            if (Move.X + map.Direction[i].X < length && Move.Y + map.Direction[i].Y < length &&
+               Move.X + map.Direction[i].X >= 0 && Move.Y + map.Direction[i].Y >= 0)
+            {
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// 링이 움직일 수 있는 범위
+        /// </summary>
+        void CanMove(Point Set, int length)
+        {
+            // 정의된 모든 방향 확인
+            for (var i = 0; i < map.Direction.Length; i++)
+            {
+                // 설치한 위치부터 움직일 Move
+                Point Move = Set;
+
+                // 마커를 뛰어넘었는지 확인
+                bool JumpMarker = false;
+
+                // 다음 방향으로 움직였을 때 배열 안에 있고 맵 밖이 아니고 마커를 뛰어넘지 않았다면
+                while (IndexIn(Move, i, length) && map.Point[Move.X, Move.Y] != PointF.Empty && !JumpMarker)
+                {
+                    // 다음 방향으로 움직인다
+                    Move.X += map.Direction[i].X;
+                    Move.Y += map.Direction[i].Y;
+
+                    // 다음 방향에 링이 있다면
+                    if (OtherComponent(Ring, Move, Item.Ring)) { break; }
+                    // 다음 방향에 마커가 있고 그 다음 방향이 배열안에 있으면
+                    if (Marker[Move.X, Move.Y] == Item.Marker && IndexIn(Move, i, length))
+                    {
+                        // 그 다음 방향에 마커가 없다면
+                        if (Marker[Move.X + map.Direction[i].X, Move.Y + map.Direction[i].Y] == Item.None)
+                        {
+                            Move = new Point(Move.X + map.Direction[i].X, Move.Y + map.Direction[i].Y);
+                            if (OtherComponent(Ring, Move, Item.Ring)) { break; }
+                            JumpMarker = true;
+                        }
+                    }
+                    // 링을 설치할 수 있다
+                    Ring[Move.X, Move.Y] = Item.Set;
                 }
             }
         }
 
         /// <summary>
-        /// 턴을 넘길 준비가 되었는지 확인
+        /// 마커 뒤집기
         /// </summary>
-        bool Ready()
+        void Reverse(Point Pick, Point set, int length)
         {
-            var sum = 0;
-            for(var i = 0; i < turn.Player.Count; i++)
+            Point direction = new Point();
+            #region 이동한 방향값 얻어오기
+            // 정의된 모든 방향을 확인
+            for (var i = 0; i < map.Direction.Length; i++)
             {
-                sum += Ring_Quantity[i];
+                Point Move = Pick;
+                // 설치한 링을 찾았는지 확인
+                bool Find = false;
+                // 다음 방향으로 움직였을 때 맵 밖이 아니고(맵 배열 안에 있고)
+                // 비어있는 좌표가 아니고
+                // 설치한 링 좌표를 찾지 못했다면
+                while (Move.X + map.Direction[i].X < length && Move.Y + map.Direction[i].Y < length &&
+                       Move.X + map.Direction[i].X >= 0 && Move.Y + map.Direction[i].Y >= 0 &&
+                       map.Point[Move.X, Move.Y] != PointF.Empty && !Find)
+                {
+                    // 다음 방향으로 움직인다
+                    Move.X += map.Direction[i].X;
+                    Move.Y += map.Direction[i].Y;
+                    // 이동한 좌표에서 설치한 링 좌표를 찾으면 그 방향으로 반환한다
+                    if (new Point(Move.X, Move.Y) == set)
+                    {
+                        direction = map.Direction[i];
+                        Find = true;
+                        break;
+                    }
+                }
+                if (Find) { break; }
             }
-            return (sum == 0) ? true : false;
-        }
+            #endregion
 
-        void CanMove()
-        {
-            // 6방향 3줄
-        }
-
-        void Reverse()
-        {
-            // 링이 지나간 거리 마커 뒤집기
+            #region 이동한 거리에 마커가 있으면 뒤집기
+            // 다음 방향이 링을 설치한 좌표일 때까지 반복
+            Point change = Pick;
+            while (new Point(change.X + direction.X, change.Y + direction.Y) != set)
+            {
+                change.X += direction.X;
+                change.Y += direction.Y;
+                if (Marker[change.X, change.Y] == Item.Marker)
+                {
+                    for (var i = 0; i < turn.Player.Count; i++)
+                    {
+                        if (Marker_Color[change.X, change.Y] == turn.Player[i])
+                        {
+                            Marker_Color[change.X, change.Y] = turn.Player[(++i < turn.Player.Count) ? i : 0];
+                            break;
+                        }
+                    }
+                }
+            }
+            #endregion
         }
 
         /// <summary>
-        /// 보드 좌표 위에 컴포넌트 올리기
+        /// 보드 좌표 위에 컴포넌트 내려놓기
         /// </summary>
         void Position(Item[,] component, Color?[,] component_color, Item set_item)
         {
@@ -292,7 +429,7 @@ namespace YINSH
                 for (var j = 0; j < length; j++)
                 {
                     // Game_Point 위에 마우스를 올렸을 때
-                    if (map.Point[i, j] != new PointF(0, 0) && Collision_Circle(map.Point[i, j], side / 2, Cursor_Point))
+                    if (map.Point[i, j] != Point.Empty && Collision_Circle(map.Point[i, j], side / 2, Cursor_Point))
                     {
                         // component자리에 설치가 가능하다면
                         if (component[i, j] == Item.Set)
@@ -308,7 +445,10 @@ namespace YINSH
                                 // 준비가 완료된 후
                                 if (Ready())
                                 {
-                                    CanMove();
+                                    if (Pick != Point.Empty)
+                                    {
+                                        Reverse(Pick, new Point(i, j), length);
+                                    }
                                     // 턴 넘기기
                                     turn.Next = true;
                                 }
@@ -320,8 +460,10 @@ namespace YINSH
                                 Marker_Quantity--;
                                 Ring_Quantity[turn.User]++;
                                 Ring[i, j] = Item.None;
-                                Reverse();
+                                Pick = new Point(i, j);
+                                CanMove(new Point(i, j), length);
                             }
+                            Show = true;
                             return;
                         }
                     }
@@ -346,7 +488,7 @@ namespace YINSH
 
         public void System()
         {
-            CanSet_Check();
+            CanSet();
             SetPos();
             Draw_Layer();
         }

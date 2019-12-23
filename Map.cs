@@ -35,6 +35,23 @@ namespace YINSH
         // 실제 좌표를 담은 보드게임 좌표
         public PointF[,] Point = new PointF[0, 0];
 
+        // Hex 방향만큼 추가
+        public Point[] Direction = new Point[]
+            { 
+                // X+
+                new Point(1, 0), 
+                // -X
+                new Point(-1, 0), 
+                // Y+
+                new Point(0, 1), 
+                // -Y
+                new Point(0, -1), 
+                // X+, Y+
+                new Point(1, 1), 
+                // -X, -Y
+                new Point(-1, -1)
+            };
+
         // 보드게임 문자 좌표 글자
         readonly public string[] Coord_Number = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11" };
         readonly public string[] Coord_Alphabet = { "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K" };

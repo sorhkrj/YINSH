@@ -25,6 +25,32 @@ namespace YINSH
             component.Setting(size, length);
         }
 
+        /// <summary>
+        /// Test Label
+        /// </summary>
+        void TextTest()
+        {
+            string ready = (turn.Count == 0) ? "Ready" : "Turn: " + turn.Count;
+            string Ring = string.Empty;
+            string Marker = "Marker: " + component.Marker_Quantity;
+            if (ready == "Ready")
+            {
+                Ring = "White Ring: " + component.Ring_Quantity[0] + ", Black Ring: " + component.Ring_Quantity[1];
+            }
+            else
+            {
+                if (turn.Player[turn.User] == Color.White)
+                {
+                    Ring = "White Ring";
+                }
+                if (turn.Player[turn.User] == Color.Black)
+                {
+                    Ring = "Black Ring";
+                }
+            }
+            label2.Text = Ring + ", " + Marker + ", " + ready;
+        }
+
         void Image()
         {
             using (Graphics g = panel.CreateGraphics())
@@ -34,9 +60,17 @@ namespace YINSH
             }
         }
 
+        /// <summary>
+        /// 규칙 컴포넌트 설치 후 그림 띄어주고 턴
+        /// </summary>
         void Rule()
         {
             component.System();
+            if (component.Show)
+            {
+                this.Refresh();
+                component.Show = false;
+            }
             turn.System();
         }
         #endregion
