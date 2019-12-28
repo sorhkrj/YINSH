@@ -17,23 +17,54 @@ namespace YINSH
             TextTest();
         }
 
-        private void Panel1_Paint(object sender, PaintEventArgs e)
+        private void Panel_Paint(object sender, PaintEventArgs e)
         {
-            Image();
+            if (Start)
+            {
+                Image();
+            }
         }
 
-        private void Panel1_MouseMove(object sender, MouseEventArgs e)
+        private void Panel_MouseClick(object sender, MouseEventArgs e)
         {
-            component.Preview(e.Location);
+            if (Start)
+            {
+                if (e.Button == MouseButtons.Left)
+                {
+                    if (!End())
+                    {
+                        Rule();
+                    }
+                    TextTest();
+                }
+            }
+        }
+
+        private void Panel_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (Start)
+            {
+                component.Preview(e.Location);
+            }
 
             // Test Label
             label1.Text = component.Preview_Text;
         }
 
-        private void Panel1_MouseClick(object sender, MouseEventArgs e)
+        private void Button1_Click(object sender, System.EventArgs e)
         {
-            Rule();
-            TextTest();
+            Start = !Start;
+            panel.Refresh();
+            if (Start == true)
+            {
+                comboBox1.Enabled = false;
+                button1.Text = "Give Up";
+            }
+            if (Start == false)
+            {
+                comboBox1.Enabled = true;
+                button1.Text = "Start";
+            }
         }
     }
 }

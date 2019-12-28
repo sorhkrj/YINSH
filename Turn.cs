@@ -3,20 +3,17 @@ using System.Drawing;
 
 namespace YINSH
 {
-    class Turn
+    public class Turn
     {
         private static Turn Instance = null;
 
-        public static Turn GetInstance
+        public static Turn GetInstance()
         {
-            get
+            if (Instance == null)
             {
-                if (Instance == null)
-                {
-                    Instance = new Turn();
-                }
-                return Instance;
+                Instance = new Turn();
             }
+            return Instance;
         }
 
         #region 변수

@@ -7,16 +7,13 @@ namespace YINSH
     {
         private static Map Instance = null;
 
-        public static Map GetInstance
+        public static Map GetInstance()
         {
-            get
+            if (Instance == null)
             {
-                if (Instance == null)
-                {
-                    Instance = new Map();
-                }
-                return Instance;
+                Instance = new Map();
             }
+            return Instance;
         }
 
         #region 변수
@@ -73,21 +70,20 @@ namespace YINSH
         /// </summary>
         void Draw(Size board)
         {
+            var side = Length / Size;
+            var tail = Size * 2;
+            angle = 0;
+
+            // 보드 좌표
+            PointF[,] Map_Point = new PointF[Size, Hex];
+            // 좌표, 선분XY, 선분의 길이
+            int x = 0, y = Length;
             // 그래픽 담당
             using (Graphics g = Graphics.FromImage(Board))
             {
                 // 그리는 펜, 색깔, 두께
                 using (Pen pen = new Pen(Color.Black, 1))
                 {
-                    var side = Length / Size;
-                    var tail = Size * 2;
-                    angle = 0;
-
-                    // 보드 좌표
-                    PointF[,] Map_Point = new PointF[Size, Hex];
-                    // 좌표, 선분XY, 선분의 길이
-                    int x = 0, y = Length;
-
                     #region 꼭짓점 그리기
                     // 등분
                     for (var j = 0; j < Size; j++)
