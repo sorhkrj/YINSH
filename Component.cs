@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Imaging;
+using System.IO;
 
 namespace YINSH
 {
@@ -23,12 +25,17 @@ namespace YINSH
         readonly Score score = Score.GetInstance();
         #endregion
 
+        #region 이벤트
+        public delegate void SendRecodeText(string text);
+        public event SendRecodeText RecodeText;
+        #endregion
+
         #region 변수
+        public Bitmap Layer;
+
         /// <summary>
         /// None, Ring, Marker
         /// </summary>
-        public Bitmap Layer;
-
         enum Item
         {
             None,
@@ -50,6 +57,7 @@ namespace YINSH
         // Ring, Marker 개수
         public int[] Ring_Quantity;
         public int Marker_Quantity;
+        public bool Marker_Shortage;
 
         // 들어올린 링, 마커 좌표
         Point Ring_PickUp = new Point();
@@ -63,6 +71,7 @@ namespace YINSH
 
         int PickAxis;
         bool PickDirection;
+        bool CheckPickUp;
         bool EndPickUp;
         bool[] PickCount;
         int PickUser;
@@ -75,6 +84,12 @@ namespace YINSH
 
         //좌표 텍스트
         public string Preview_Text = string.Empty;
+
+        // 기록
+        public readonly List<string> DataImage = new List<string>();
+        public bool Recoding;
+        public bool Move;
+        bool NextTurn;
         #endregion
 
         #region 함수
@@ -95,6 +110,7 @@ namespace YINSH
 
             Ring_Color = new Color[length, length];
             Marker_Color = new Color[length, length];
+            Marker_Shortage = false;
 
             Ring_Quantity = new int[turn.Player.Count];
             // Player 모두에게 Ring 5개 초기화
@@ -105,6 +121,7 @@ namespace YINSH
             Marker_Quantity = 51;
 
             PickDirection = false;
+            CheckPickUp = false;
             EndPickUp = true;
             PickCount = new bool[turn.Player.Count];
             for (var i = 0; i < turn.Player.Count; i++)
@@ -115,6 +132,11 @@ namespace YINSH
             // Cursor
             Cursor = new Item[length, length];
             Cursor_Out = true;
+
+            // Data Recode
+            Recoding = true;
+            Move = false;
+            NextTurn = false;
         }
 
         /// <summary>
@@ -202,7 +224,7 @@ namespace YINSH
                             // 그래픽 담당
                             using (Graphics g = Graphics.FromImage(Layer))
                             {
-                                using (Pen Border_pen = new Pen(Color.Blue, Border_thikness))
+                                using (Pen Border_pen = new Pen(Color.Black, Border_thikness))
                                 {
                                     if (set_item == Item.Ring)
                                     {
@@ -308,10 +330,39 @@ namespace YINSH
             }
         }
 
+        public void DataRecode(System.Windows.Forms.Panel board, Bitmap map, Bitmap component, Bitmap score)
+        {
+            if (Recoding)
+            {
+                if (Move)
+                {
+                    DataImage.Add(ImageString(board, map, component, score));
+                    Move = false;
+                }
+            }
+        }
+
+        string ImageString(System.Windows.Forms.Panel board, Bitmap map, Bitmap component, Bitmap score)
+        {
+            Bitmap game = new Bitmap(board.Width, board.Height);
+            using (Graphics g = Graphics.FromImage(game))
+            {
+                g.DrawImage(map, Point.Empty);
+                g.DrawImage(component, Point.Empty);
+                g.DrawImage(score, Point.Empty);
+            }
+            MemoryStream memoryStream = new MemoryStream();
+            game.Save(memoryStream, ImageFormat.Png);
+            byte[] byteStream = memoryStream.GetBuffer();
+            string bimapString = Convert.ToBase64String(byteStream, Base64FormattingOptions.InsertLineBreaks);
+            return bimapString;
+        }
+
+        #region 컴포넌트 내려놓기
         /// <summary>
         /// 턴을 넘길 준비가 되었는지 확인
         /// </summary>
-        bool Ready(int[] count)
+        public bool Ready(int[] count)
         {
             var sum = 0;
             for (var i = 0; i < turn.Player.Count; i++)
@@ -414,21 +465,11 @@ namespace YINSH
 
                     // 움직인 방향에 링이 있다면
                     if (MoveItem(Ring, Move, Item.Ring)) { break; }
-                    // 움직인 방향에 마커가 있다면
+                    // 움직인 방향에 마커가 없다면
                     if (MoveItem(Marker, Move, Item.None))
                     {
-                        // 그 다음 방향이 배열안에 없으면
-                        if (!PosIn(Move, map.Direction[i], length)) { break; }
-                        // 그 다음 방향에 마커가 없다면
-                        if (Marker[Move.X + map.Direction[i].X, Move.Y + map.Direction[i].Y] == Item.None)
-                        {
-                            Move = new Point(Move.X + map.Direction[i].X, Move.Y + map.Direction[i].Y);
-                            if (MoveItem(Ring, Move, Item.Ring)) { break; }
-                        }
-                        // 그 다음 방향에도 마커가 있다면
-                        else { break; }
+                        return true;
                     }
-                    return true;
                 }
             }
             return false;
@@ -437,18 +478,15 @@ namespace YINSH
         /// <summary>
         /// 링이 움직일 수 있는 범위
         /// </summary>
-        void RingMove(Point Set, int length)
+        void MoveRing(Point Set, int length)
         {
             // 정의된 모든 방향 확인
             for (var i = 0; i < map.Direction.Length; i++)
             {
                 // 설치한 위치부터 움직일 Move
                 Point Move = Set;
-
-                // 마커를 뛰어넘었는지 확인
-                bool JumpMarker = false;
                 // 다음 방향의 좌표가 좌표안에 있고 마커를 뛰어넘지 않았다면
-                while (PosIn(Move, map.Direction[i], length) && !JumpMarker)
+                while (PosIn(Move, map.Direction[i], length))
                 {
                     // 움직인 방향으로 움직인다
                     Move.X += map.Direction[i].X;
@@ -457,25 +495,11 @@ namespace YINSH
                     // 움직인 방향에 링이 있다면
                     if (MoveItem(Ring, Move, Item.Ring)) { break; }
                     // 움직인 방향에 마커가 있다면
-                    if (MoveItem(Marker, Move, Item.Marker))
+                    if (MoveItem(Marker, Move, Item.None))
                     {
-                        if(!PosIn(Move, map.Direction[i], length)) { break; }
-                        // 그 다음 방향에 마커가 없다면
-                        if (Marker[Move.X + map.Direction[i].X, Move.Y + map.Direction[i].Y] == Item.None)
-                        {
-                            // 그 다음 방향을 확인한다
-                            Point overmove = new Point(Move.X + map.Direction[i].X, Move.Y + map.Direction[i].Y);
-                            if (MoveItem(Ring, overmove, Item.Ring)) { break; }
-                            // 그 다음 방향에 링을 설치할 수 있다
-                            Ring[overmove.X, overmove.Y] = Item.Set;
-                            JumpMarker = true;
-                        }
-                        // 그 다음 방향에 마커가 있다면
-                        if (JumpMarker) { break; }
+                        // 링을 설치할 수 있다
+                        Ring[Move.X, Move.Y] = Item.Set;
                     }
-
-                    // 링을 설치할 수 있다
-                    Ring[Move.X, Move.Y] = Item.Set;
                 }
             }
         }
@@ -561,10 +585,16 @@ namespace YINSH
                             // 같은 자리에서 다시 그리지 않기위해 component 설치
                             component[i, j] = set_item;
                             component_color[i, j] = color;
+                            Move = true;
+
                             // 좌표에 component 설치 후 기능
                             if (set_item == Item.Ring)
                             {
                                 Ring_Quantity[turn.User]--;
+                                if(turn.Count <= 10)
+                                {
+                                    RecodeText($"\r\n{turn.Count}.{map.Coord(new Point(i, j))}");
+                                }
 
                                 // 준비가 완료되고 가져갈 컴포넌트가 없으면
                                 if (Ready(Ring_Quantity))
@@ -572,13 +602,12 @@ namespace YINSH
                                     if (Ring_PickUp != Point.Empty)
                                     {
                                         Ring_Set = new Point(i, j);
+                                        RecodeText($"-{map.Coord(new Point(i, j))}");
                                         Reverse(Ring_PickUp, Ring_Set, length);
                                         CanPick(Ring_PickUp, Ring_Set, length);
                                     }
                                     if (EndPickUp)
                                     {
-                                        // 턴 넘기기
-                                        turn.Next = true;
                                         // 어떤 링에 마커를 설치할 수 있는지 확인
                                         CanSet();
                                     }
@@ -595,9 +624,18 @@ namespace YINSH
                                 Ring_Quantity[turn.User]++;
                                 Ring[i, j] = Item.None;
                                 Ring_Color[i, j] = Color.Empty;
+                                if (!NextTurn)
+                                {
+                                    RecodeText($"\r\n{turn.Count}.");
+                                }
+                                else
+                                {
+                                    NextTurn = false;
+                                }
+                                RecodeText($"{map.Coord(new Point(i, j))}");
                                 Ring_PickUp = Point.Empty;
                                 Ring_PickUp = new Point(i, j);
-                                RingMove(new Point(i, j), length);
+                                MoveRing(new Point(i, j), length);
                             }
                             return;
                         }
@@ -624,7 +662,9 @@ namespace YINSH
                 score.check = true;
             }
         }
+        #endregion
 
+        #region 컴포넌트 가져오기
         /// <summary>
         /// 점수를 얻을 수 있는지 확인
         /// </summary>
@@ -683,7 +723,7 @@ namespace YINSH
                             {
                                 EndPickUp = false;
                                 PickCount[user] = true;
-                                for(var count = 0; count < Pick_Point.Count; count++)
+                                for (var count = 0; count < Pick_Point.Count; count++)
                                 {
                                     Marker[Pick_Point[count].X, Pick_Point[count].Y] = Item.Pick;
                                 }
@@ -695,13 +735,25 @@ namespace YINSH
                     check.Y += direction.Y;
                 }
             }
+            if (Marker_Quantity == 0)
+            {
+                if (EndPickUp)
+                {
+                    Marker_Shortage = true;
+                }
+            }
             if (!EndPickUp)
             {
                 PickUser = turn.User;
                 if (!PickCount[turn.User])
                 {
-                    PickUser++;
-                    PickUser = (PickUser >= turn.Player.Count) ? 0 : PickUser;
+                    PickUser = (++PickUser >= turn.Player.Count) ? 0 : PickUser;
+                    NextTurn = true;
+                    RecodeText($"\r\n{turn.Count + PickUser}.");
+                }
+                else
+                {
+                    RecodeText(";");
                 }
                 for (var i = 0; i < turn.Player.Count; i++)
                 {
@@ -715,7 +767,7 @@ namespace YINSH
         /// </summary>
         bool CanDrag(Point Pick, int length)
         {
-            if(PickDirection) { return false; }
+            if (PickDirection) { return false; }
             // 정의된 모든 방향 확인
             for (var i = 0; i < map.Direction.Length; i += 2)
             {
@@ -781,6 +833,7 @@ namespace YINSH
         {
             if (Marker_PickUp.Count == 0)
             {
+                Recoding = false;
                 Marker[Drag.X, Drag.Y] = Item.PickUp;
                 Marker_PickUp.Add(Drag);
             }
@@ -798,6 +851,18 @@ namespace YINSH
             {
                 DragPickUp(Item.PickUp, Item.Pick, length);
             }
+            if (Marker_PickUp.Count == PickMax)
+            {
+                CheckPickUp = true;
+                //Marker_PickUp.Sort((p1, p2) => (p1.X > p2.X) ? 1 : -1);
+                //Marker_PickUp.Sort((p1, p2) => (p1.Y > p2.Y) ? 1 : -1);
+                Marker_PickUp.Sort((p1, p2) => p1.X.CompareTo(p2.X));
+                Marker_PickUp.Sort((p1, p2) => p1.Y.CompareTo(p2.Y));
+                RecodeText($"x{map.Coord(Marker_PickUp[0])}-x{map.Coord(Marker_PickUp[4])};");
+                DragPickUp(Item.PickUp, Item.None, length);
+                DragPickUp(Item.Pick, Item.Marker, length);
+                Recoding = true;
+            }
         }
 
         /// <summary>
@@ -812,7 +877,7 @@ namespace YINSH
                     if (Marker[i, j] == pick_item)
                     {
                         Marker[i, j] = change_item;
-                        if(change_item == Item.None) { Marker_Color[i, j] = Color.Empty; }
+                        if (change_item == Item.None) { Marker_Color[i, j] = Color.Empty; }
                     }
                 }
             }
@@ -854,17 +919,20 @@ namespace YINSH
                                     Ring[i, j] = Item.None;
                                     Ring_Color[i, j] = Color.Empty;
                                     PickDirection = false;
-                                    DragPickUp(Item.PickUp, Item.None, length);
-                                    DragPickUp(Item.Pick, Item.Marker, length);
                                     score.Player[PickUser]++;
+                                    RecodeText($"x{map.Coord(new Point(i, j))}");
+                                    if (NextTurn)
+                                    {
+                                        RecodeText(";");
+                                    }
+                                    Move = true;
+                                    CheckPickUp = false;
                                     EndPickUp = true;
                                     CanPick(Ring_PickUp, Ring_Set, length);
                                     score.check = true;
                                     if (EndPickUp)
                                     {
-                                        EndPickUp = true;
                                         turn.Check = true;
-                                        turn.Next = true;
                                         CanSet();
                                     }
                                 }
@@ -895,7 +963,7 @@ namespace YINSH
         /// </summary>
         void Pick()
         {
-            if(Marker_PickUp.Count == PickMax)
+            if (CheckPickUp)
             {
                 PickPosition(Ring_Color, Item.Ring);
             }
@@ -904,6 +972,7 @@ namespace YINSH
                 PickPosition(Marker_Color, Item.Marker);
             }
         }
+        #endregion
 
         /// <summary>
         /// 컴포넌트 내려놓기 or 가져가기

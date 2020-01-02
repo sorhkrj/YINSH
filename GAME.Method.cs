@@ -3,7 +3,7 @@ using System.Windows.Forms;
 
 namespace YINSH
 {
-    public partial class GAME : Form
+    public partial class MainForm : Form
     {
         #region 인스턴스
         readonly Map map = Map.GetInstance();

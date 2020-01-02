@@ -1,70 +1,162 @@
-﻿using System.Windows.Forms;
+﻿using System.Drawing;
+using System.Windows.Forms;
 
 namespace YINSH
 {
-    /// <summary>
-     /// 분할 클래스 진행을 맡은 Main Class
-     /// </summary>
-    public partial class GAME : Form
+    public partial class Game : Form
     {
-        public GAME()
+        private static Game Instance = null;
+
+        public static Game GetInstance()
+        {
+            if (Instance == null)
+            {
+                Instance = new Game();
+            }
+            return Instance;
+        }
+
+        #region 인스턴스
+        readonly Map map = Map.GetInstance();
+        readonly Turn turn = Turn.GetInstance();
+        readonly Component component = Component.GetInstance();
+        readonly Score score = Score.GetInstance();
+        #endregion
+
+        #region 이벤트
+        public delegate void SendRingText(string text);
+        public event SendRingText RingText;
+        public delegate void SendMarkerText(string text);
+        public event SendMarkerText MarkerText;
+        public delegate void SendResultText(string text);
+        public event SendResultText ResultText;
+        #endregion
+
+        #region 변수
+        public Panel Board;
+
+        bool Start;
+
+        readonly string[] player = { "White", "Black" };
+        string result;
+
+        public bool End()
+        {
+            for (var i = 0; i < score.Player.Length; i++)
+            {
+                if (score.Player[i] == score.winscore)
+                {
+                    result = player[i] + " win!";
+                    return true;
+                }
+            }
+            if(component.Marker_Shortage)
+            {
+                result = "Draw";
+                return true;
+            }
+            return false;
+        }
+        #endregion
+
+        #region 함수
+        public Game()
         {
             InitializeComponent();
+            Init();
             Setting();
+        }
 
-            // Test Label
-            label1.Text = string.Empty;
-            TextTest();
+        private void Init()
+        {
+            TopLevel = false;
+            TopMost = false;
+            Board = panel;
+            score.winscore = 3;
+            Start = false;
+
+            Size size = Board.Size;
+            int length = (Map.Size * 2) + 1;
+            map.System(size, length);
         }
 
         private void Panel_Paint(object sender, PaintEventArgs e)
         {
-            if (Start)
-            {
-                Image();
-            }
-        }
-
-        private void Panel_MouseClick(object sender, MouseEventArgs e)
-        {
-            if (Start)
-            {
-                if (e.Button == MouseButtons.Left)
-                {
-                    if (!End())
-                    {
-                        Rule();
-                    }
-                    TextTest();
-                }
-            }
+            Border(e);
+            Image();
         }
 
         private void Panel_MouseMove(object sender, MouseEventArgs e)
         {
-            if (Start)
-            {
-                component.Preview(e.Location);
-            }
-
-            // Test Label
-            label1.Text = component.Preview_Text;
+            component.Preview(e.Location);
         }
 
-        private void Button1_Click(object sender, System.EventArgs e)
+        private void Panel_MouseClick(object sender, MouseEventArgs e)
         {
-            Start = !Start;
-            panel.Refresh();
-            if (Start == true)
+            if (e.Button == MouseButtons.Left)
             {
-                comboBox1.Enabled = false;
-                button1.Text = "Give Up";
-            }
-            if (Start == false)
-            {
-                comboBox1.Enabled = true;
-                button1.Text = "Start";
+                if (!End())
+                {
+                    Rule();
+                    ComponentText();
+                    if (End())
+                    {
+                        ResultText(result);
+                    }
+                }
             }
         }
+
+        public void ComponentText()
+        {
+            if (!Start)
+            {
+                if (component.Ready(component.Ring_Quantity)) { Start = true; }
+                RingText($"White {component.Ring_Quantity[0]}  Black {component.Ring_Quantity[1]}");
+            }
+            if (Start) { RingText($"Turn {player[turn.User]}"); }
+            MarkerText($"Marker\r\n{component.Marker_Quantity.ToString()}");
+        }
+
+        public void Setting()
+        {
+            Start = false;
+
+            Size size = Board.Size;
+            int length = (Map.Size * 2) + 1;
+
+            turn.Setting();
+            component.Setting(size, length);
+            score.Setting(size);
+        }
+
+        void Border(PaintEventArgs e)
+        {
+            Rectangle r = this.ClientRectangle;
+            r.Width -= 1;
+            r.Height -= 1;
+            e.Graphics.DrawRectangle(Pens.Black, r);
+        }
+
+        void Image()
+        {
+            using (Graphics g = Board.CreateGraphics())
+            {
+                g.DrawImage(map.Board, Point.Empty);
+                g.DrawImage(component.Layer, Point.Empty);
+                g.DrawImage(score.Layer, Point.Empty);
+            }
+            component.DataRecode(Board, map.Board, component.Layer, score.Layer);
+        }
+
+        void Rule()
+        {
+            component.System();
+            turn.System();
+            score.System();
+
+            Board.Invalidate();
+        }
+        #endregion
     }
 }

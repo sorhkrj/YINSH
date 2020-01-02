@@ -24,12 +24,10 @@ namespace YINSH
         /// 현재 플레이어
         /// 턴 확인
         /// 컴포넌트 넘기기
-        /// 준비&시작 확인
         public List<Color> Player = new List<Color>();
         public int Count;
         public int User;
         public bool Check;
-        public bool Next;
         #endregion
 
         #region 함수
@@ -39,21 +37,16 @@ namespace YINSH
             Player.Add(Color.White);
             Player.Add(Color.Black);
 
-            Count = 0;
+            Count = 1;
             User = 0;
             Check = false;
-            Next = false;
         }
 
         public void System()
         {
             if (Check == true)
             {
-                if (Next == true)
-                {
-                    Count++;
-                    Next = false;
-                }
+                Count++;
                 User++;
                 User = (User >= Player.Count) ? 0 : User;
                 Check = false;

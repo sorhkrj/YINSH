@@ -23,7 +23,7 @@ namespace YINSH
         public Bitmap Layer;
         PointF[,] Draw_Point;
         public int[] Player;
-        public const int winscore = 3;
+        public int winscore;
         public bool check;
         #endregion
 
@@ -40,20 +40,20 @@ namespace YINSH
         void Position(Size size)
         {
             var side = Map.Length / Map.Size;
-            var height = size.Height - side;
-            var width = size.Width - side;
+            var height = size.Height;
+            var width = size.Width;
 
             var line = 0;
             for (var i = 0; i < winscore; i++)
             {
                 line += side;
-                Draw_Point[0, i] = new PointF(side + line, height);
+                Draw_Point[0, i] = new PointF(line + (side / 5), height - side);
             }
             line = 0;
             for (var i = 0; i < winscore; i++)
             {
                 line += side;
-                Draw_Point[1, i] = new PointF(width - line, side);
+                Draw_Point[1, i] = new PointF(width - line - (side / 5), side);
             }
         }
 
@@ -95,7 +95,7 @@ namespace YINSH
             // 그래픽 담당
             using (Graphics g = Graphics.FromImage(Layer))
             {
-                using (Pen Border_pen = new Pen(Color.Blue, Border_thikness))
+                using (Pen Border_pen = new Pen(Color.Black, Border_thikness))
                 {
                     for (var player = 0; player < turn.Player.Count; player++)
                     {
@@ -124,11 +124,6 @@ namespace YINSH
                     }
                 }
             }
-        }
-
-        public bool GameEnd()
-        {
-            return false;
         }
 
         public void System()

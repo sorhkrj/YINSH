@@ -51,7 +51,15 @@ namespace YINSH
 
         // 보드게임 문자 좌표 글자
         readonly public string[] Coord_Number = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11" };
-        readonly public string[] Coord_Alphabet = { "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K" };
+        readonly public string[] Coord_Alphabet = { "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k" };
+
+        public string Coord(Point point)
+        {
+            string Alphabet, Number;
+            Alphabet = Coord_Alphabet[point.X];
+            Number = Coord_Number[point.Y];
+            return $"{Alphabet}{Number}";
+        }
         #endregion
 
         #region 함수
@@ -71,7 +79,7 @@ namespace YINSH
         void Draw(Size board)
         {
             var side = Length / Size;
-            var tail = Size * 2;
+            var tail = Size;
             angle = 0;
 
             // 보드 좌표
@@ -187,11 +195,64 @@ namespace YINSH
             }
         }
 
+        void Coordinate()
+        {
+            var side = Size * 4;
+            Font font = new Font("Consolas", 12f, FontStyle.Regular, GraphicsUnit.Point);
+            StringFormat stringFormat = new StringFormat
+            {
+                Alignment = StringAlignment.Center,
+                LineAlignment = StringAlignment.Near
+            };
+
+            using (Graphics g = Graphics.FromImage(Board))
+            {
+                using (Brush brush = Brushes.Black)
+                {
+                    #region 영문자 좌표
+                    Draw_Text(Coord_Alphabet, g, 0, font, brush, Point[0, 1], 0, -side, stringFormat);
+                    for (var x = 1; x <= 4; x++)
+                    {
+                        Draw_Text(Coord_Alphabet, g, x, font, brush, Point[x, 0], 0, -side, stringFormat);
+                    }
+                    Draw_Text(Coord_Alphabet, g, 5, font, brush, Point[5, 1], 0, -side, stringFormat);
+                    for (int x = 6, y = 1; x <= 9; x++, y++)
+                    {
+                        Draw_Text(Coord_Alphabet, g, x, font, brush, Point[x, y], 0, -side, stringFormat);
+                    }
+                    Draw_Text(Coord_Alphabet, g, 10, font, brush, Point[10, 6], 0, -side, stringFormat);
+                    #endregion
+
+                    #region 숫자 좌표
+                    Draw_Text(Coord_Number, g, 0, font, brush, Point[1, 0], side, side, stringFormat);
+                    for (var y = 1; y <= 4; y++)
+                    {
+                        Draw_Text(Coord_Number, g, y, font, brush, Point[0, y], side, side, stringFormat);
+                    }
+                    Draw_Text(Coord_Number, g, 5, font, brush, Point[1, 5], side, side, stringFormat);
+                    for (int x = 1, y = 6; y <= 9; x++, y++)
+                    {
+                        Draw_Text(Coord_Number, g, y, font, brush, Point[x, y], side, side, stringFormat);
+                    }
+                    Draw_Text(Coord_Number, g, 10, font, brush, Point[6, 10], side, side, stringFormat);
+                    #endregion
+                }
+            }
+        }
+
+        void Draw_Text(string[] coordinate, Graphics g, int index, Font font, Brush brush, PointF point, float sideX, float sideY, StringFormat stringFormat)
+        {
+            g.DrawString(coordinate[index], font, brush, point.X - sideX,
+                                                         point.Y - sideY, 
+                                                         stringFormat);
+        }
+
         public void System(Size size, int length)
         {
             Setting(size, length);
             Draw(size);
             Line(size);
+            Coordinate();
         }
         #endregion
 
