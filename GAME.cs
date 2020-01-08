@@ -24,6 +24,8 @@ namespace YINSH
         #endregion
 
         #region 이벤트
+        public delegate void CheckChangeFile();
+        public event CheckChangeFile ChangeFile;
         public delegate void SendRingText(string text);
         public event SendRingText RingText;
         public delegate void SendMarkerText(string text);
@@ -35,9 +37,7 @@ namespace YINSH
         #region 변수
         public Panel Board;
 
-        bool Start;
-
-        readonly string[] player = { "White", "Black" };
+        readonly public string[] player = { "White", "Black" };
         string result;
 
         public bool End()
@@ -73,7 +73,6 @@ namespace YINSH
             TopMost = false;
             Board = panel;
             score.winscore = 3;
-            Start = false;
 
             Size size = Board.Size;
             int length = (Map.Size * 2) + 1;
@@ -88,7 +87,7 @@ namespace YINSH
 
         private void Panel_MouseMove(object sender, MouseEventArgs e)
         {
-            component.Preview(e.Location);
+            component.Cursor_Point = e.Location;
         }
 
         private void Panel_MouseClick(object sender, MouseEventArgs e)
@@ -109,19 +108,13 @@ namespace YINSH
 
         public void ComponentText()
         {
-            if (!Start)
-            {
-                if (component.Ready(component.Ring_Quantity)) { Start = true; }
-                RingText($"White {component.Ring_Quantity[0]}  Black {component.Ring_Quantity[1]}");
-            }
-            if (Start) { RingText($"Turn {player[turn.User]}"); }
+            ChangeFile();
+            RingText($"Turn {player[turn.User]}");
             MarkerText($"Marker\r\n{component.Marker_Quantity.ToString()}");
         }
 
         public void Setting()
         {
-            Start = false;
-
             Size size = Board.Size;
             int length = (Map.Size * 2) + 1;
 
@@ -146,7 +139,6 @@ namespace YINSH
                 g.DrawImage(component.Layer, Point.Empty);
                 g.DrawImage(score.Layer, Point.Empty);
             }
-            component.DataRecode(Board, map.Board, component.Layer, score.Layer);
         }
 
         void Rule()

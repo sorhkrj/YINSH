@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Drawing.Imaging;
-using System.IO;
 
 namespace YINSH
 {
@@ -43,8 +41,7 @@ namespace YINSH
             Ring,
             Marker,
             Pick,
-            PickUp,
-            Cursor
+            PickUp
         }
         // Ring, Marker 설치 좌표
         Item[,] Ring;
@@ -76,17 +73,9 @@ namespace YINSH
         bool[] PickCount;
         int PickUser;
 
-        // Cursor 좌표
-        Item[,] Cursor;
         public Point Cursor_Point = new Point();
-        Point Preview_Point = new Point();
-        bool Cursor_Out;
-
-        //좌표 텍스트
-        public string Preview_Text = string.Empty;
 
         // 기록
-        public readonly List<string> DataImage = new List<string>();
         public bool Recoding;
         public bool Move;
         bool NextTurn;
@@ -112,6 +101,8 @@ namespace YINSH
             Marker_Color = new Color[length, length];
             Marker_Shortage = false;
 
+            Ring_PickUp = Point.Empty;
+
             Ring_Quantity = new int[turn.Player.Count];
             // Player 모두에게 Ring 5개 초기화
             for (var i = 0; i < turn.Player.Count; i++)
@@ -129,61 +120,13 @@ namespace YINSH
                 PickCount[i] = false;
             }
 
-            // Cursor
-            Cursor = new Item[length, length];
-            Cursor_Out = true;
-
             // Data Recode
             Recoding = true;
             Move = false;
             NextTurn = false;
         }
 
-        /// <summary>
-        /// Mouse Cursor 좌표
-        /// </summary>
-        public void Preview(Point point)
-        {
-            Cursor_Point = point;
-
-            var side = Map.Length / Map.Size;
-            var length = (Map.Size * 2) + 1;
-
-            for (var i = 0; i < length; i++)
-            {
-                for (var j = 0; j < length; j++)
-                {
-                    if (map.Point[i, j] != Point.Empty)
-                    {
-                        // 마우스를 Game_Point에 올렸을 때
-                        if (Cursor[i, j] == Item.None && Collision_Circle(map.Point[i, j], side / 2, Cursor_Point))
-                        {
-                            Cursor_Out = true;
-                            // 다시 그릴 수 있도록 true
-                            Cursor[Preview_Point.X, Preview_Point.Y] = Item.None;
-                            Preview_Point = new Point(i, j);
-                            // 같은 자리에서 다시 그리지 않기 위해 false
-                            Cursor[i, j] = Item.Cursor;
-                            Preview_Text = "(" + map.Coord_Alphabet[i] + ", " + map.Coord_Number[j] + ")";
-                            // Preview_Text = "(" + i + ", " + j + ")";
-                            return;
-                        }
-                        // 마우스가 Game_Point를 벗어났을 때
-                        else if (Cursor[i, j] == Item.Cursor && !Collision_Circle(map.Point[i, j], side / 2, Cursor_Point))
-                        {
-                            if (Cursor_Out)
-                            {
-                                Cursor_Out = false;
-                                // 다시 그릴 수 있도록 true
-                                Cursor[Preview_Point.X, Preview_Point.Y] = Item.None;
-                                Preview_Text = string.Empty;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
+        #region 컴포넌트 그리기
         /// <summary>
         /// Layer를 지우고 Ring과 Marker를 다시 그리기
         /// </summary>
@@ -193,6 +136,7 @@ namespace YINSH
             {
                 g.Clear(Color.Transparent);
                 Draw(Ring, Item.Ring);
+                Draw(Ring, Item.Set);
                 Draw(Marker, Item.Marker);
                 Draw(Marker, Item.Pick);
                 Draw(Marker, Item.PickUp);
@@ -226,6 +170,7 @@ namespace YINSH
                             {
                                 using (Pen Border_pen = new Pen(Color.Black, Border_thikness))
                                 {
+                                    // Ring
                                     if (set_item == Item.Ring)
                                     {
                                         // Ring Color, Thickness
@@ -248,6 +193,7 @@ namespace YINSH
                                                                     Ring_Size);
                                         }
                                     }
+                                    // Marker
                                     if (set_item == Item.Marker)
                                     {
                                         // Marker 색깔
@@ -303,8 +249,38 @@ namespace YINSH
                                         }
                                     }
                                 }
+                                using(Pen Border_pen = new Pen(Color.FromArgb(120, Color.Black), Border_thikness))
+                                {
+                                    // Ring
+                                    if (set_item == Item.Set)
+                                    {
+                                        if (!Ready(Ring_Quantity) && turn.Count > 10)
+                                        {
+                                            // Ring Color, Thickness
+                                            using (Pen Ring_pen = new Pen(Color.FromArgb(120, turn.Player[turn.User]), Ring_thickness))
+                                            {
+                                                // Ring In Border
+                                                g.DrawEllipse(Border_pen, map.Point[i, j].X - ((Ring_Size + Ring_thickness) / 2),
+                                                                          map.Point[i, j].Y - ((Ring_Size + Ring_thickness) / 2),
+                                                                          Ring_Size + Ring_thickness,
+                                                                          Ring_Size + Ring_thickness);
+                                                // Ring In Border
+                                                g.DrawEllipse(Border_pen, map.Point[i, j].X - (Marker_Size / 2),
+                                                                          map.Point[i, j].Y - (Marker_Size / 2),
+                                                                          Marker_Size,
+                                                                          Marker_Size);
+                                                // Ring Draw
+                                                g.DrawEllipse(Ring_pen, map.Point[i, j].X - ((Ring_Size + 0.6f) / 2),
+                                                                        map.Point[i, j].Y - ((Ring_Size + 0.4f) / 2),
+                                                                        Ring_Size,
+                                                                        Ring_Size);
+                                            }
+                                        }
+                                    }
+                                }
                                 using (Pen Border_pen = new Pen(Color.Yellow, Border_thikness))
                                 {
+                                    // Marker
                                     if (set_item == Item.PickUp)
                                     {
                                         // Marker 색깔
@@ -329,34 +305,7 @@ namespace YINSH
                 }
             }
         }
-
-        public void DataRecode(System.Windows.Forms.Panel board, Bitmap map, Bitmap component, Bitmap score)
-        {
-            if (Recoding)
-            {
-                if (Move)
-                {
-                    DataImage.Add(ImageString(board, map, component, score));
-                    Move = false;
-                }
-            }
-        }
-
-        string ImageString(System.Windows.Forms.Panel board, Bitmap map, Bitmap component, Bitmap score)
-        {
-            Bitmap game = new Bitmap(board.Width, board.Height);
-            using (Graphics g = Graphics.FromImage(game))
-            {
-                g.DrawImage(map, Point.Empty);
-                g.DrawImage(component, Point.Empty);
-                g.DrawImage(score, Point.Empty);
-            }
-            MemoryStream memoryStream = new MemoryStream();
-            game.Save(memoryStream, ImageFormat.Png);
-            byte[] byteStream = memoryStream.GetBuffer();
-            string bimapString = Convert.ToBase64String(byteStream, Base64FormattingOptions.InsertLineBreaks);
-            return bimapString;
-        }
+        #endregion
 
         #region 컴포넌트 내려놓기
         /// <summary>
@@ -485,8 +434,12 @@ namespace YINSH
             {
                 // 설치한 위치부터 움직일 Move
                 Point Move = Set;
-                // 다음 방향의 좌표가 좌표안에 있고 마커를 뛰어넘지 않았다면
-                while (PosIn(Move, map.Direction[i], length))
+
+                // 마커를 뛰어넘었는지 확인
+                bool JumpMarker = false;
+
+                // 다음 방향의 좌표가 좌표안에 있으면
+                while (PosIn(Move, map.Direction[i], length)&& !JumpMarker)
                 {
                     // 움직인 방향으로 움직인다
                     Move.X += map.Direction[i].X;
@@ -494,11 +447,24 @@ namespace YINSH
 
                     // 움직인 방향에 링이 있다면
                     if (MoveItem(Ring, Move, Item.Ring)) { break; }
-                    // 움직인 방향에 마커가 있다면
+                    // 움직인 방향에 마커가 없다면
                     if (MoveItem(Marker, Move, Item.None))
                     {
                         // 링을 설치할 수 있다
                         Ring[Move.X, Move.Y] = Item.Set;
+                    }
+                    // 움직인 방향에 마커가 있고 그 다음 방향의 좌표가 좌표안에 있으면
+                    if(MoveItem(Marker, Move, Item.Marker) && PosIn(Move, map.Direction[i], length))
+                    {
+                        var newmove = new Point(Move.X + map.Direction[i].X, Move.Y + map.Direction[i].Y);
+                        if (MoveItem(Marker, newmove, Item.None))
+                        {
+                            Move = newmove;
+                            if (MoveItem(Ring, Move, Item.Ring)) { break; }
+                            // 링을 설치할 수 있다
+                            Ring[Move.X, Move.Y] = Item.Set;
+                            JumpMarker = true;
+                        }
                     }
                 }
             }
@@ -975,7 +941,7 @@ namespace YINSH
         #endregion
 
         /// <summary>
-        /// 컴포넌트 내려놓기 or 가져가기
+        /// 컴포넌트 기능
         /// </summary>
         void Prograss()
         {

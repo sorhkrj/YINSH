@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Drawing;
+using System.Drawing.Text;
 
 namespace YINSH
 {
@@ -207,6 +208,7 @@ namespace YINSH
 
             using (Graphics g = Graphics.FromImage(Board))
             {
+                g.TextRenderingHint = TextRenderingHint.AntiAlias;
                 using (Brush brush = Brushes.Black)
                 {
                     #region 영문자 좌표
