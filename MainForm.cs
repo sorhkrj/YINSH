@@ -246,7 +246,7 @@ namespace YINSH
             LastSavePath = string.Empty;
             game.Setting();
             ResetTextEvent();
-            game.Board.Refresh();
+            game.Board.Invalidate();
         }
 
         #region Text
